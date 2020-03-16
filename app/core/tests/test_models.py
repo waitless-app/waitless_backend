@@ -1,6 +1,10 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from core import models
 
+def sample_user(email='sample@user.pl', password='testpassword' ):
+    ### Crreate sample user"""
+    return get_user_model().objects.create_user(email, password) 
 
 class ModelTests(TestCase):
 
@@ -48,3 +52,14 @@ class ModelTests(TestCase):
             name=name,
         )
         self.assertEqual(user.name, name)
+
+    def test_premises_str(self):
+        """Test the recipce string represent"""
+        recipe = models.Premises.objects.create(
+            user=sample_user(),
+            name='Szot',
+            image_url='https://media-cdn.tripadvisor.com/media/photo-s/16/4c/a7/39/a-o-to-i-nasz-steampunkowy.jpg',
+            city='Gdynia',
+        )
+
+        self.assertEqual(str(recipe), recipe.name)
