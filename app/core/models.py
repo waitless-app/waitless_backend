@@ -40,13 +40,14 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
 
+
 class Premises(models.Model):
     """Premises object"""
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE
     )
-    name = models.CharField(max_length= 255)
+    name = models.CharField(max_length=255)
     image_url = models.CharField(max_length=255)
     city = models.CharField(max_length=255, blank=True)
 
