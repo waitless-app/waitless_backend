@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -5,6 +7,7 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 from django.conf import settings
+from django.shortcuts import reverse
 
 
 class UserManager(BaseUserManager):
@@ -53,3 +56,39 @@ class Premises(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Order(models.Model):
+    REQUESTED = 'REQUESTED'
+    ACCEPTED = 'ACCEPTED'
+    DECLINED = 'DECLINED'
+    STARTED = 'STARTED'
+    IN_PROGRESS = "IN_PROGRESS"
+    READY = "READY"
+    COMPLETED = "COMPLETED"
+    STATUSES = (
+        (REQUESTED, REQUESTED),
+        (ACCEPTED, ACCEPTED),
+        (DECLINED, DECLINED),
+        (STARTED, STARTED),
+        (IN_PROGRESS, IN_PROGRESS),
+        (READY, READY),
+        (COMPLETED, COMPLETED),
+    )
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True
+    )
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    status = models.CharField(
+        max_length=20, choices=STATUSES, default=REQUESTED)
+
+    def __str__(self):
+        return f'{self.id}'
+
+    def get_absolute_url(self):
+        return reverse('order:order_detail', kwargs={'order_id': self.id})

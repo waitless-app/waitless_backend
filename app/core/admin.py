@@ -31,5 +31,21 @@ class UserAdmin(BaseUserAdmin):
     )
 
 
+class OrderAdmin(admin.ModelAdmin):
+    fields = (
+        'status',
+    )
+    list_display = (
+        'id', 'status', 'created', 'updated'
+    )
+    list_filter = (
+        'status',
+    )
+    readonly_fieldset = (
+        'id', 'created', 'updated',
+    )
+
+
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.Premises)
+admin.site.register(models.Order, OrderAdmin)

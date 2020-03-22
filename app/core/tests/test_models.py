@@ -56,7 +56,7 @@ class ModelTests(TestCase):
         self.assertEqual(user.name, name)
 
     def test_premises_str(self):
-        """Test the recipce string represent"""
+        """Test the premises string represent"""
         recipe = models.Premises.objects.create(
             user=sample_user(),
             name='Szot',
@@ -65,3 +65,8 @@ class ModelTests(TestCase):
         )
 
         self.assertEqual(str(recipe), recipe.name)
+
+    def test_orders_str(self):
+        """Test orders string represent"""
+        order = models.Order.objects.create()
+        self.assertEqual(str(order), str(order.id))

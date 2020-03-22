@@ -3,3 +3,5 @@ djangorestframework>=3.11.0,<3.12.0
 psycopg2>=2.8.4,<2.9.0
 flake8>=3.7.9,<3.8.0
 djangorestframework-simplejwt>=4.4.0,<4.5.0
+channels>=2.4.0,<2.5.0
+channels-redis>=2.4.2,<2.5.0

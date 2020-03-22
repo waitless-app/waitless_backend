@@ -1,4 +1,3 @@
-from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
 from core.models import Premises
@@ -10,7 +9,6 @@ class PremisesViewSet(viewsets.ModelViewSet):
     """Manage premises in database"""
     serializer_class = serializers.PremisesSerializer
     queryset = Premises.objects.all()
-    authentication_classes = (TokenAuthentication, )
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
