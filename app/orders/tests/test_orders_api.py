@@ -58,3 +58,14 @@ class PrivateOrdersApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
+
+    def test_create_basic_order(self):
+        """Test for creating sample order"""
+        payload = {
+            "status" : null,
+            "product" : "Kebab",
+            "employee" : null,
+        }
+        res = self.client.post(ORDERS_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)

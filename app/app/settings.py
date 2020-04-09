@@ -123,6 +123,11 @@ USE_L10N = True
 
 USE_TZ = True
 
+SIMPLE_JWT = {
+    # only for dev purpose
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+}
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
@@ -148,8 +153,4 @@ CHANNEL_LAYERS = {
     },
 }
 
-SIMLE_JWT = {
-    # only for dev purpose
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=60),
-}
+

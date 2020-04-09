@@ -80,12 +80,24 @@ class Order(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        null=True
+        blank=True,
+        null=True,
+        related_name='orders_as_user'
+    )
+    employee = models.ForeignKey(
+         settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name='orders_as_employee'
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     status = models.CharField(
         max_length=20, choices=STATUSES, default=REQUESTED)
+    product = models.CharField(max_length=255, default='Cerveza')
+    
+    
 
     def __str__(self):
         return f'{self.id}'
