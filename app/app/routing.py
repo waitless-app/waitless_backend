@@ -1,13 +1,13 @@
 from channels.routing import ProtocolTypeRouter, URLRouter
 from orders.consumers import NotificationConsumer
 from django.urls import path
-from .middleware.channelsmiddleware import TokenAuthMiddleware
+from .middleware.channelsmiddleware import TokenAuthMiddlewareStack
 
 channel_routing = ProtocolTypeRouter({
-    'websocket': TokenAuthMiddleware(
+    'websocket': TokenAuthMiddlewareStack(
         URLRouter([
-        path('notification/', NotificationConsumer),
-    ])
+            path('notification/', NotificationConsumer),
+        ])
     )
 }
 )

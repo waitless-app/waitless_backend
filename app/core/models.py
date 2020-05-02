@@ -43,6 +43,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
 
+    # traktuje groip to jako pole
+    @property
+    def group(self):
+        groups = self.groups.all()
+        return groups[0].name if groups else None
+
 
 class Premises(models.Model):
     """Premises object"""
@@ -85,7 +91,7 @@ class Order(models.Model):
         related_name='orders_as_user'
     )
     employee = models.ForeignKey(
-         settings.AUTH_USER_MODEL,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         blank=True,
         null=True,
@@ -96,8 +102,6 @@ class Order(models.Model):
     status = models.CharField(
         max_length=20, choices=STATUSES, default=REQUESTED)
     product = models.CharField(max_length=255, default='Cerveza')
-    
-    
 
     def __str__(self):
         return f'{self.id}'

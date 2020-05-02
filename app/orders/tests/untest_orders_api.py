@@ -28,12 +28,6 @@ class PublicOrdersApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_auth_required_post(self):
-        """Test that authentication is required to create oreder"""
-        res = self.client.post(ORDERS_URL)
-
-        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
-
 
 class PrivateOrdersApiTests(TestCase):
     """Test orders actions only for authenticated users"""
@@ -58,14 +52,3 @@ class PrivateOrdersApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
-
-    def test_create_basic_order(self):
-        """Test for creating sample order"""
-        payload = {
-            "status" : null,
-            "product" : "Kebab",
-            "employee" : null,
-        }
-        res = self.client.post(ORDERS_URL, payload)
-
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)

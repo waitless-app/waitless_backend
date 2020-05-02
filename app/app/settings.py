@@ -26,7 +26,11 @@ SECRET_KEY = '9c%$$ryrjp%&rctp0boes-ns+oe3d#xf1%gx@h@f-zoss6^$pn'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '0.0.0.0',
+    '192.168.2.6'
+]
 
 
 # Application definition
@@ -152,5 +156,3 @@ CHANNEL_LAYERS = {
         }
     },
 }
-
-

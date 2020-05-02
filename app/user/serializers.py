@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 
@@ -9,11 +10,19 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = ('email', 'password', 'name')
+        read_onlyfields = ('id',)
         extra_kwargs = {'password': {'write_only': True, 'min_length': 5}}
 
     def create(self, validated_data):
         """Create a new user with encrypted password and return it"""
-        return get_user_model().objects.create_user(**validated_data)
+        # group_data = 'validated_data.pop('group')'
+        # prevent user to set his own group, on default he is just user
+        group_data = 'user'
+        group, _ = Group.objects.get_or_create(name=group_data)
+        user = self.Meta.model.objects.create_user(**validated_data)
+        user.groups.add(group)
+        user.save()
+        return user
 
     def update(self, isinstance, validated_data):
         """Update a user, setting the password correctly and return it"""

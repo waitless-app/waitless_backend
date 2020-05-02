@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext as _
-
+from .forms import GroupAdminForm
+from django.contrib.auth.models import Group
 from core import models
 
 
@@ -49,3 +50,17 @@ class OrderAdmin(admin.ModelAdmin):
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.Premises)
 admin.site.register(models.Order, OrderAdmin)
+admin.site.unregister(Group)
+
+# Create a new Group admin.
+
+
+class GroupAdmin(admin.ModelAdmin):
+    # Use our custom form.
+    form = GroupAdminForm
+    # Filter permissions horizontal as well.
+    filter_horizontal = ['permissions']
+
+
+# Register the new Group ModelAdmin.
+admin.site.register(Group, GroupAdmin)
