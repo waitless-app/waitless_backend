@@ -24,7 +24,7 @@ class UpdateOrderSerializer(serializers.ModelSerializer):
 
 class ReadOnlyOrderSerializer(serializers.ModelSerializer):
     # premises = serializers.PrimaryKeyRelatedField(queryset=Premises.objects.all())
-
+    # above works but PremisesSerializer() does not
     premises = PremisesSerializer()
     customer = UserSerializer(read_only=True)
     vendor = UserSerializer(read_only=True)

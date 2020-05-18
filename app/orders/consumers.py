@@ -179,6 +179,8 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         serializer = UpdateOrderSerializer(data=content, partial=True)
         serializer.is_valid(raise_exception=True)
         order = serializer.update(instance, serializer.validated_data)
+        #if u remove print u get an error ???
+        print(order)
         return order
 
     @database_sync_to_async
