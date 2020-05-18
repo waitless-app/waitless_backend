@@ -4,7 +4,8 @@ from channels.db import database_sync_to_async
 from channels.layers import get_channel_layer
 from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth.models import Group
-from core.models import Order
+from core.models import Order, Premises
+
 import pytest
 
 from app.routing import channel_routing
@@ -14,35 +15,6 @@ TEST_CHANNEL_LAYERS = {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
 }
-
-
-@database_sync_to_async
-def create_user(email, password):
-    user = get_user_model().objects.create_user(
-        email=email,
-        password=password,
-        name="Mike Tayson"
-    )
-    return user
-
-
-@database_sync_to_async
-def create_employee(email, password):
-    user = get_user_model().objects.create_user(
-        email=email,
-        password=password,
-        name="Mike Tayson"
-    )
-
-    user_group, _ = Group.objects.get_or_create(name="employee")
-    user.groups.add(user_group)
-    user.save()
-    return user
-
-
-@database_sync_to_async
-def create_order(**kwargs):
-    return Order.objects.create(**kwargs)
 
 
 async def auth_connect(user):
@@ -56,30 +28,69 @@ async def auth_connect(user):
     return communicator
 
 
-async def connect_and_create_order(
-    *,
-    user,
-    status
-):
+@database_sync_to_async
+def create_order(**kwargs):
+    return Order.objects.create(**kwargs)
+
+
+@database_sync_to_async
+@pytest.fixture
+def customer():
+    user = get_user_model().objects.create_user(
+        email='user@user.com',
+        password='password',
+        name="Mike Tayson"
+    )
+    return user
+
+
+@database_sync_to_async
+@pytest.fixture
+def premises():
+    premises = Premises.objects.create(
+        name='Pizzarini',
+        city='Warsaw'
+    )
+    return premises
+
+
+@database_sync_to_async
+@pytest.fixture
+def vendor():
+    user = get_user_model().objects.create_user(
+        email='vendor@vendor.com',
+        password='vendor',
+        name="Mike Tayson"
+    )
+    user.groups.clear()
+    user_group, _ = Group.objects.get_or_create(name="vendor")
+    user.groups.add(user_group)
+    user.save()
+    return user
+
+
+async def connect_and_create_order(user, status, premises):
     communicator = await auth_connect(user)
     await communicator.send_json_to({
         'type': 'create.order',
         'data': {
             'status': status,
-            'user': user.id
+            'customer': user.id,
+            'premises': premises.id
         }
     })
     return communicator
 
 
-async def connect_and_update_order(*, user, order, status):
+async def connect_and_update_order(user, order, status, premises):
     communicator = await auth_connect(user)
     await communicator.send_json_to({
         'type': 'update.order',
         'data': {
             'id': f'{order.id}',
-            'status': status
-
+            'status': status,
+            'vendor': user.id,
+            'premises': premises.id
         }
     })
     return communicator
@@ -88,6 +99,7 @@ async def connect_and_update_order(*, user, order, status):
 @pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 class TestWebSocket:
+
     async def test_unauthorized_user_cannot_connect_to_socket(self, settings):
         settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
         communicator = WebsocketCommunicator(
@@ -97,23 +109,18 @@ class TestWebSocket:
         connected, _ = await communicator.connect()
         assert connected is False
 
-    async def test_user_can_connect_to_server(self, settings):
+    async def test_customer_can_connect_to_server(self, settings, customer):
         settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
-        user = await create_user(
-            'test@user.pl', 'password'
-        )
-        communicator = await auth_connect(user)
+        communicator = await auth_connect(customer)
         await communicator.disconnect()
 
-    async def test_user_can_create_an_order(self, settings):
+    async def test_customer_can_create_an_order(self, settings, customer, premises):
         settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
-        user = await create_user(
-            email="user2@avocado.pl",
-            password="enchilada"
-        )
+
         communicator = await connect_and_create_order(
-            user=user,
-            status='REQUESTED'
+            user=customer,
+            status='REQUESTED',
+            premises=premises
         )
 
         response = await communicator.receive_json_from()
@@ -121,17 +128,13 @@ class TestWebSocket:
 
         assert 'REQUESTED' == data['status']
 
-    async def test_user_is_added_to_order_groups_on_connect(self, settings):
+    async def test_customer_is_added_to_order_groups_on_connect(self, settings, customer, premises):
         settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
 
-        user = await create_user(
-            email='user1@avocado.io',
-            password='PASWW0RD'
-        )
-
         communicator = await connect_and_create_order(
-            user=user,
-            status='REQUESTED'
+            user=customer,
+            status='REQUESTED',
+            premises=premises
         )
 
         response = await communicator.receive_json_from()
@@ -152,21 +155,17 @@ class TestWebSocket:
 
         await communicator.disconnect()
 
-    async def test_user_is_added_to_order_groups_on_init(self, settings):
+    async def test_customer_is_added_to_order_groups_on_init(self, settings, customer, premises):
         settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
-
-        user = await create_user(
-            email='user2@avocado.pl',
-            password='PASSW01RDS'
-        )
 
         order = await create_order(
             status="REQUESTED",
-            user=user
+            premises=premises,
+            customer=customer
         )
 
         # user should be added to users groups
-        communicator = await auth_connect(user)
+        communicator = await auth_connect(customer)
 
         message = {
             'type': 'echo.message',
@@ -178,5 +177,117 @@ class TestWebSocket:
 
         response = await communicator.receive_json_from()
         assert message == response
+
+        await communicator.disconnect()
+
+    async def test_vendor_can_update_an_order(self, settings, premises, vendor):
+        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
+
+        order = await create_order(
+            status="REQUESTED",
+            premises=premises
+        )
+
+        communicator = await connect_and_update_order(
+            user=vendor,
+            order=order,
+            status="IN_PROGRESS",
+            premises=premises
+        )
+
+        response = await communicator.receive_json_from()
+
+        data = response.get('data')
+
+        assert data['status'] == 'IN_PROGRESS'
+        assert data['customer'] == None
+        assert data['vendor'].get('email') == vendor.email
+
+        await communicator.disconnect()
+
+    async def test_vendor_is_added_to_order_group_on_update(self, settings, premises, vendor):
+        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
+
+        order = await create_order(
+            status="REQUESTED",
+            premises=premises,
+        )
+
+        communicator = await connect_and_update_order(
+            user=vendor,
+            order=order,
+            status=Order.IN_PROGRESS,
+            premises=premises
+        )
+
+        response = await communicator.receive_json_from()
+        data = response.get('data')
+
+        order_id = data['id']
+        message = {
+            'type': 'echo.message',
+            'data': 'This is test message'
+        }
+
+        channel_layer = get_channel_layer()
+
+        await channel_layer.group_send(order_id, message=message)
+
+        response = await communicator.receive_json_from()
+
+        assert message == response
+
+        await communicator.disconnect()
+
+    async def test_vendor_is_alerted_on_order_create(self, settings, customer, premises):
+        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
+
+        channel_layer = get_channel_layer()
+        await channel_layer.group_add(
+            group='vendor',
+            channel='test_channel'
+        )
+
+        communicator = await connect_and_create_order(
+            user=customer,
+            status="REQUESTED",
+            premises=premises
+        )
+
+        response = await channel_layer.receive('test_channel')
+        data = response.get('data')
+
+        assert data['id'] != None
+        assert customer.email == data['customer'].get('email')
+
+        await communicator.disconnect()
+
+    async def test_customer_is_alerted_on_order_update(self, settings, premises, vendor):
+        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
+
+        order = await create_order(
+            status="REQUESTED",
+            premises=premises
+        )
+
+        channel_layer = get_channel_layer()
+        await channel_layer.group_add(
+            group=f'{order.id}',
+            channel='test_channel'
+        )
+
+        # json to server
+        communicator = await connect_and_update_order(
+            user=vendor,
+            order=order,
+            status=Order.IN_PROGRESS,
+            premises=premises
+        )
+
+        response = await channel_layer.receive('test_channel')
+        data = response.get('data')
+
+        assert f'{order.id}' == data['id']
+        assert vendor.email == data['vendor'].get('email')
 
         await communicator.disconnect()

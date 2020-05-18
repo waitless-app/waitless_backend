@@ -8,6 +8,14 @@ def sample_user(email='sample@user.pl', password='testpassword'):
     return get_user_model().objects.create_user(email, password)
 
 
+def sample_premises(
+    name='Szot',
+    image_url='https://via.placeholder.com/350x150',
+    city='Gdynia'
+):
+    return models.Premises.objects.create(name=name, image_url=image_url, city=city)
+
+
 class ModelTests(TestCase):
 
     def test_create_user_with_email_successful(self):
@@ -57,16 +65,19 @@ class ModelTests(TestCase):
 
     def test_premises_str(self):
         """Test the premises string represent"""
-        recipe = models.Premises.objects.create(
-            user=sample_user(),
+        premises = models.Premises.objects.create(
             name='Szot',
             image_url='https://via.placeholder.com/350x150',
             city='Gdynia',
         )
 
-        self.assertEqual(str(recipe), recipe.name)
+        self.assertEqual(str(premises), premises.name)
 
     def test_orders_str(self):
         """Test orders string represent"""
-        order = models.Order.objects.create()
+
+        order = models.Order.objects.create(
+            status="REQUESTED",
+            premises=sample_premises()
+        )
         self.assertEqual(str(order), str(order.id))

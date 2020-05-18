@@ -10,15 +10,15 @@ class OrderView(viewsets.ReadOnlyModelViewSet):
     lookup_field = 'id'
     lookup_url_kwarg = 'order_id'
     permission_classes = (IsAuthenticated, )
-    serializer_class = serializers.OrderSerializer
-    queryset = Order.objects.all()
+    serializer_class = serializers.ReadOnlyOrderSerializer
 
     def get_queryset(self):
         user = self.request.user
-        if user.group == "employee":
+        if user.group == "vendor":
             return Order.objects.filter(
-                Q(status=Order.REQUESTED) | Q(employee=user)
+                Q(status=Order.REQUESTED) | Q(vendor=user)
             )
-        if user.group == 'user':
-            return Order.objects.filter(user=user)
+        if user.group == 'customer':
+            return Order.objects.filter(customer=user)
         return Order.objects.none()
+    

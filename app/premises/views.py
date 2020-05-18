@@ -7,13 +7,15 @@ from premises import serializers
 
 class PremisesViewSet(viewsets.ModelViewSet):
     """Manage premises in database"""
+    lookup_field = 'id'
+    lookup_url_kwarg = 'premises_id'
     serializer_class = serializers.PremisesSerializer
     queryset = Premises.objects.all()
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         """Retreive the premises for auth user"""
-        return self.queryset.filter(user=self.request.user)
+        return self.queryset
 
     def get_serializer_class(self):
         """Return appropriate serializer class"""
@@ -24,4 +26,4 @@ class PremisesViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Create a new premises"""
-        serializer.save(user=self.request.user)
+        serializer.save()

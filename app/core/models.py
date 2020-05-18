@@ -52,10 +52,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Premises(models.Model):
     """Premises object"""
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
-    )
+    # owner = models.ForeignKey(
+    #     settings.AUTH_USER_MODEL,
+    #     on_delete=models.CASCADE
+    # )
     name = models.CharField(max_length=255)
     image_url = models.CharField(max_length=255)
     city = models.CharField(max_length=255, blank=True)
@@ -83,28 +83,35 @@ class Order(models.Model):
     )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(
+    customer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         blank=True,
         null=True,
-        related_name='orders_as_user'
+        related_name='orders_as_customer'
     )
-    employee = models.ForeignKey(
+    vendor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         blank=True,
         null=True,
-        related_name='orders_as_employee'
+        related_name='orders_as_vendor'
+    )
+    premises = models.ForeignKey(
+        Premises,
+        on_delete=models.CASCADE,
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+    ready_time = models.DateTimeField(null=True)
+    collected_time = models.DateTimeField(null=True)
     status = models.CharField(
         max_length=20, choices=STATUSES, default=REQUESTED)
     product = models.CharField(max_length=255, default='Cerveza')
+    order_comment = models.TextField(max_length=500, null=True)
 
     def __str__(self):
-        return f'{self.id}'
+        return f'{self.id, self.premises}'
 
     def get_absolute_url(self):
         return reverse('order:order_detail', kwargs={'order_id': self.id})
