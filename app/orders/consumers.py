@@ -105,7 +105,7 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
     async def update_order(self, event):
         order = await self._update_order(event.get('data'))
         order_id = f'{order.id}'
-        await self.send_json({'data': str(order)})
+        # await self.send_json({'data': str(order)})
         order_data = ReadOnlyOrderSerializer(order).data
 
         # send updates to vendors that subscribe to this order.
@@ -176,9 +176,8 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
     @database_sync_to_async
     def _update_order(self, content):
         instance = Order.objects.get(id=content.get('id'))
-        serializer = UpdateOrderSerializer(data=content)
+        serializer = UpdateOrderSerializer(data=content, partial=True)
         serializer.is_valid(raise_exception=True)
-        print(serializer.validated_data)
         order = serializer.update(instance, serializer.validated_data)
         return order
 
