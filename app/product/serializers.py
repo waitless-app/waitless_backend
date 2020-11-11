@@ -2,6 +2,8 @@ from rest_framework import serializers
 
 from core.models import Menu, Product, Premises
 
+from premises.serializers import PremisesSerializer
+
 
 
 
@@ -30,6 +32,7 @@ class MenuSerializer(serializers.ModelSerializer):
 
 class MenuProductsSerializer(serializers.ModelSerializer):
     products = ProductListingSerializer(many=True)
+    premises = PremisesSerializer()
     class Meta:
         model = Menu
         fields = '__all__'

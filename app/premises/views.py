@@ -34,7 +34,7 @@ class PremisesViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def menu(self, request, **kwargs):
         instance = self.get_object()
-        menu = Menu.objects.filter(premises=instance)
+        menu = Menu.objects.filter(premises=instance, is_default=True)
         serializer = MenuProductsSerializer(menu, many=True)
         return Response(serializer.data)
 
