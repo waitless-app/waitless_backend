@@ -50,15 +50,38 @@ class User(AbstractBaseUser, PermissionsMixin):
         return groups[0].name if groups else None
 
 
+
 class Premises(models.Model):
     """Premises object"""
-    # owner = models.ForeignKey(
-    #     settings.AUTH_USER_MODEL,
-    #     on_delete=models.CASCADE
-    # )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+    )
     name = models.CharField(max_length=255)
     image_url = models.CharField(max_length=255)
     city = models.CharField(max_length=255, blank=True)
+    # default_menu = models.ForeignKey(Menu, models.SET_NULL, blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+class Menu(models.Model):
+    name = models.CharField(max_length=255)
+    premises = models.ForeignKey(Premises, on_delete=models.CASCADE)
+    is_default = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
+
+class Product(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=False)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    ingredients = models.CharField(max_length=255)
+    estimated_creation_time = models.DecimalField(max_digits=5, decimal_places=2)
+    menu = models.ForeignKey(Menu, models.SET_NULL, blank=True, null=True, related_name="products")
+    premises = models.ForeignKey(Premises, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
@@ -107,11 +130,19 @@ class Order(models.Model):
     collected_time = models.DateTimeField(null=True)
     status = models.CharField(
         max_length=20, choices=STATUSES, default=REQUESTED)
-    product = models.CharField(max_length=255, default='Cerveza')
     order_comment = models.TextField(max_length=500, null=True)
 
     def __str__(self):
-        return f'{self.id, self.premises}'
+        return f'{self.id}'
 
     def get_absolute_url(self):
         return reverse('order:order_detail', kwargs={'order_id': self.id})
+
+class OrderProduct(models.Model):
+    id = models.AutoField(primary_key=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="order_products")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=1)
+
+    class Meta:
+        unique_together = ('order', 'product')

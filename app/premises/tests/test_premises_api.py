@@ -15,10 +15,15 @@ PREMISES_URL = reverse('premises:premises-list')
 
 def sample_premises(**params):
     """Create and return sample premises"""
+    owner = get_user_model().objects.create_user(
+        email="owner@onboard.io",
+        password="passw0rd"
+    )
     defaults = {
         'name': 'Sztoss',
         'image_url': 'https://via.placeholder.com/350x150',
         'city': 'Gdynia',
+        'owner': owner
     }
     defaults.update(params)
 
@@ -57,7 +62,7 @@ class PrivatePremisesApiTests(TestCase):
     def test_retrive_premises(self):
         """Test retreiving a list of premises"""
         sample_premises()
-        sample_premises()
+        #should be second premises created
 
         res = self.client.get(PREMISES_URL)
 
@@ -96,7 +101,10 @@ class PrivatePremisesApiTests(TestCase):
 
     def test_create_basic_premises(self):
         """Test creating premises"""
-
+        owner = get_user_model().objects.create_user(
+            email="owner@onboard.io",
+            password="passw0rd"
+        )
         payload = {
             'name': 'Sztoss',
             'image_url': 'https://via.placeholder.com/350x150',

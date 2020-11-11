@@ -40,7 +40,6 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
                     self.channel_layer.group_add(order, self.channel_name))
             asyncio.gather(*channel_groups)
             await self.accept()
-            await self.send_json({'group' : user_group})
 
     async def receive_json(self, content, **kwargs):
         # ADD try to check json
@@ -106,6 +105,7 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         order = await self._update_order(event.get('data'))
         order_id = f'{order.id}'
         # await self.send_json({'data': str(order)})
+
         order_data = ReadOnlyOrderSerializer(order).data
 
         # send updates to vendors that subscribe to this order.
@@ -147,9 +147,12 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
         await super().disconnect(code)
 
-    @database_sync_to_async
-    def get_order_data(order):
-        return ReadOnlyOrderSerializer(order).data
+    # @database_sync_to_async
+    # def test_get_order(orderid):
+    #     instance = Order.objects.get(id=order_id)
+    #     serializer = ReadOnlyOrderSerializer(instance).data
+    #     print(serializer)
+    #     return serializer
 
     @database_sync_to_async
     def _create_order(self, content):
@@ -180,9 +183,7 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         serializer.is_valid(raise_exception=True)
         order = serializer.update(instance, serializer.validated_data)
         #if u remove print u get an error ???
-        print(order)
         return order
-
     @database_sync_to_async
     def _get_user_group(self, user):
         if not user.is_authenticated:

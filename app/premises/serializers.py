@@ -7,7 +7,7 @@ User = get_user_model()
 
 class PremisesSerializer(serializers.ModelSerializer):
     """Serializer a premises"""
-
+    owner = serializers.ReadOnlyField(source='owner.email')
     class Meta:
         model = Premises
         fields = '__all__'

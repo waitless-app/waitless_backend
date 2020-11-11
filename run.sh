@@ -1,7 +1,10 @@
 #!/bin/bash
 
+run_vscode() {
+	code .
+}
 run_project() {
-	code . && sudo docker-compose up
+	sudo docker-compose up
 }
 
 run_test() {
@@ -12,15 +15,19 @@ run_test() {
 choice_function() {
 
 	echo "CHOOSE"
+	echo "0 > just start app"
 	echo "1 > start app and work vscode"
 	echo "2 > test"
 
 	read choice
 
 	case "$choice" in 
-
-	"1")
+	"0")
 		run_project
+	;;
+		
+	"1")
+		run_project && run_vscode
 	;;
 
 	"2")

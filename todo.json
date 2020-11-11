@@ -1,0 +1,19 @@
+{   
+    "global_task": [
+        {
+            "task" : "add field in menu model BooleanField is_public default false || on menu api while listing if request user is owner return all if not return only is_public=true"
+        },
+        {
+            "task" : "in order to load menu with items use endpoin /api/premises/{premises_id}/menu"
+        }
+    ],
+    "local_task": [
+        {
+            "task" : "Add test for product API"
+        },
+        {
+            "task" : "Add test for creating orders",
+            "description" : "Create order -> Create orderproduct"
+        }
+    ]
+}

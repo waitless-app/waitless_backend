@@ -34,7 +34,7 @@ class UserAdmin(BaseUserAdmin):
 
 class OrderAdmin(admin.ModelAdmin):
     fields = (
-        'status',
+        'status','customer','vendor','premises','order_comment'
     )
     list_display = (
         'id', 'status', 'created', 'updated'
@@ -50,6 +50,7 @@ class OrderAdmin(admin.ModelAdmin):
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.Premises)
 admin.site.register(models.Order, OrderAdmin)
+admin.site.register(models.OrderProduct)
 admin.site.unregister(Group)
 
 # Create a new Group admin.
