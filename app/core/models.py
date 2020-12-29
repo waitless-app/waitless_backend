@@ -50,6 +50,17 @@ class User(AbstractBaseUser, PermissionsMixin):
         return groups[0].name if groups else None
 
 
+class Tag(models.Model):
+    name = models.CharField(max_length=255)
+    owner = models.ForeignKey(User)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class Premises(models.Model):
     """Premises object"""
     owner = models.ForeignKey(
@@ -59,8 +70,8 @@ class Premises(models.Model):
     name = models.CharField(max_length=255)
     image_url = models.CharField(max_length=255)
     city = models.CharField(max_length=255, blank=True)
-
-    # default_menu = models.ForeignKey(Menu, models.SET_NULL, blank=True, null=True)
+    tags = models.ManyToManyField(Tag, null=True)
+    description = models.TextField()
 
     def __str__(self):
         return self.name
