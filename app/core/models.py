@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.contrib.gis.db.models import PointField
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
@@ -52,7 +53,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Tag(models.Model):
     name = models.CharField(max_length=255)
-    owner = models.ForeignKey(User)
+    owner = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
     class Meta:
         ordering = ['name']
@@ -70,8 +71,13 @@ class Premises(models.Model):
     name = models.CharField(max_length=255)
     image_url = models.CharField(max_length=255)
     city = models.CharField(max_length=255, blank=True)
-    tags = models.ManyToManyField(Tag, null=True)
-    description = models.TextField()
+    tags = models.ManyToManyField(Tag, blank=True)
+    description = models.TextField(null=True)
+    country = models.CharField(max_length=255)
+    city = models.CharField(max_length=255)
+    postcode = models.CharField(max_length=255)
+    address = models.CharField(max_length=255)
+    location = PointField(null=False, blank=False, srid=4326, verbose_name='Location')
 
     def __str__(self):
         return self.name
