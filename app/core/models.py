@@ -69,7 +69,7 @@ class Premises(models.Model):
         on_delete=models.CASCADE,
     )
     name = models.CharField(max_length=255)
-    image_url = models.CharField(max_length=255)
+    image = models.FileField(upload_to='product')
     city = models.CharField(max_length=255, blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
     description = models.TextField(null=True)
