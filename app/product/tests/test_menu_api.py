@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.gis.geos import Point
 from django.urls import reverse
 from django.test import TestCase
 
@@ -24,6 +25,7 @@ class PublicMenuApiTest(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
+
 class PrivateMenuApiTest(TestCase):
     """Test authorized calls for menu API"""
 
@@ -38,13 +40,18 @@ class PrivateMenuApiTest(TestCase):
             email='owner@owner.com',
             password='passw0rd'
         )
+
         self.premises = Premises.objects.create(
             name='Fast Spot',
-            image_url='https://via.placeholder.com/350x150',
+            image='https://via.placeholder.com/350x150',
             city='Warsaw',
-            owner=owner
+            owner=owner,
+            location=Point(1, 1),
+            country='Poland',
+            postcode='88-888',
+            address='Sample Address 121',
         )
-    
+
     def test_retreive_menu(self):
         """Test retreiving menu"""
         Menu.objects.create(premises=self.premises, name='Master Menu')
@@ -57,12 +64,12 @@ class PrivateMenuApiTest(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
-    
+
     def test_create_menu(self):
         """ Test creating menu"""
         payload = {
-            'premises' : self.premises.id,
-            'name' : 'Main menu'
+            'premises': self.premises.id,
+            'name': 'Main menu'
         }
 
         res = self.client.post(MENU_URL, payload)

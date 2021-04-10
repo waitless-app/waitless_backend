@@ -4,11 +4,12 @@ from core.models import Menu, Product, Premises
 
 from premises.serializers import PremisesSerializer
 
-
+from app.serializer_custom_fields import Base64ImageField
 
 
 class ProductSerializer(serializers.ModelSerializer):
     """ serializer to product object"""
+    image = Base64ImageField(max_length=None)
 
     class Meta:
         model = Product

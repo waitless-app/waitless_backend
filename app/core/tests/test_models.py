@@ -1,3 +1,4 @@
+from django.contrib.gis.geos import Point
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from core import models
@@ -9,46 +10,51 @@ def sample_user(email='sample@user.pl', password='testpassword'):
 
 
 def sample_premises(
-    owner,
-    name='Szot',
-    image_url='https://via.placeholder.com/350x150',
-    city='Gdynia'
+        owner,
+        name='Szot',
+        image_url='https://via.placeholder.com/350x150',
+        city='Gdynia'
 ):
-
     return models.Premises.objects.create(
-        name=name, 
-        image_url=image_url,
+        name=name,
+        image=image_url,
         city=city,
-        owner=owner
+        owner=owner,
+        location=Point(1, 1)
     )
 
+
 def sample_menu(
-    name='Master menu',
-    is_default=True
+        name='Master menu',
+        is_default=True
 ):
-    premises=sample_premises(owner = sample_user(email='owner@onboard.io'))
+    premises = sample_premises(owner=sample_user(email='owner@onboard.io'))
     return models.Menu.objects.create(name=name, premises=premises, is_default=is_default)
+
+
 def sample_product(
-      name = 'AleBrowar Easy Pale Ale DDH Comet',
-        description = 'Very tasty cold drink',
+        name='AleBrowar Easy Pale Ale DDH Comet',
+        description='Very tasty cold drink',
         is_active=True,
-        price = 9.99,
-        ingredients = 'Hop, Water, Yeast',
-        estimated_creation_time = 5.10
+        price=9.99,
+        ingredients='Hop, Water, Yeast',
+        estimated_creation_time=5.10
 ):
     owner = sample_user(email='product@onboard.io')
-    premises=sample_premises(owner=owner)
+    premises = sample_premises(owner=owner)
     menu = sample_menu()
     return models.Product.objects.create(
-            name=name,
-            description=description,
-            is_active=is_active,
-            price=price,
-            ingredients=ingredients,
-            estimated_creation_time=estimated_creation_time,
-            menu=menu,
-            premises=premises,
-        )
+        name=name,
+        description=description,
+        is_active=is_active,
+        price=price,
+        ingredients=ingredients,
+        estimated_creation_time=estimated_creation_time,
+        menu=menu,
+        premises=premises,
+    )
+
+
 class ModelTests(TestCase):
 
     def test_create_user_with_email_successful(self):
@@ -100,9 +106,10 @@ class ModelTests(TestCase):
         """Test the premises string represent"""
         premises = models.Premises.objects.create(
             name='Szot',
-            image_url='https://via.placeholder.com/350x150',
+            image='https://via.placeholder.com/350x150',
             city='Gdynia',
-            owner= sample_user()
+            owner=sample_user(),
+            location=Point(1, 1),
         )
 
         self.assertEqual(str(premises), premises.name)
@@ -123,7 +130,7 @@ class ModelTests(TestCase):
 
         menu = models.Menu.objects.create(
             name=name,
-            premises = premises
+            premises=premises
         )
         self.assertEqual(menu.name, name)
 
@@ -131,19 +138,16 @@ class ModelTests(TestCase):
         menu = sample_menu()
         self.assertEqual(str(menu), menu.name)
 
-
     def test_product_create(self):
         name = 'AleBrowar Easy Pale Ale DDH Comet'
         description = 'Very tasty cold drink'
-        is_active=True
+        is_active = True
         price = 9.99
         ingredients = 'Hop, Water, Yeast'
         estimated_creation_time = 5.10
         menu = sample_menu()
         owner = sample_user(email='owner2@onboard.io')
         premises = sample_premises(owner=owner)
-     
-        
 
         product = models.Product.objects.create(
             name=name,
@@ -156,9 +160,10 @@ class ModelTests(TestCase):
             premises=premises,
         )
         self.assertEqual(product.name, name)
+
     def test_product_str(self):
-    # Sample product for str test
-    # Sample 'product' added to 'menu' with 'premises' added by 'owner'  
+        # Sample product for str test
+        # Sample 'product' added to 'menu' with 'premises' added by 'owner'
         product = sample_product(name='Cold Vodka')
 
         self.assertEqual(str(product), product.name)

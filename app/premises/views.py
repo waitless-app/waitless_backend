@@ -1,5 +1,6 @@
+from django.contrib.gis.geos import Point
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from core.models import Premises, Menu
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -18,16 +19,18 @@ class PremisesViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Retreive the premises for auth user"""
-        if(self.request.META['HTTP_X_SOURCE_WEB']):
-            print('HEADER MATCH')
-            return self.queryset.filter(owner=self.request.user)
-        return self.queryset
+        try:
+            # TODO create wrapper for header
+            if(self.request.META['HTTP_X_SOURCE_WEB']):
+                print('HEADER MATCH')
+                return self.queryset.filter(owner=self.request.user)
+        except KeyError:
+            return self.queryset
 
     def get_serializer_class(self):
         """Return appropriate serializer class"""
-        if self.action == 'retreive':
-            return serializers.PremisesDetailSerializer
-
+        # if self.action == 'retreive':
+        #     return serializers.PremisesDetailSerializer
         return self.serializer_class
 
     def perform_create(self, serializer):
