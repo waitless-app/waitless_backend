@@ -18,6 +18,9 @@ class PremisesViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Retreive the premises for auth user"""
+        if(self.request.META['HTTP_X_SOURCE_WEB']):
+            print('HEADER MATCH')
+            return self.queryset.filter(owner=self.request.user)
         return self.queryset
 
     def get_serializer_class(self):
