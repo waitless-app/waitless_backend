@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'user',
     'premises',
     'orders',
+    'debug_toolbar',
 ]
 
 MIDDLEWARE = [
@@ -62,6 +63,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True # If this is used then `CORS_ORIGIN_WHITELIST` will not have any effect
@@ -145,7 +147,11 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
 }
-
+INTERNAL_IPS = [
+    # ...
+    '*',
+    # ...
+]
 AUTH_USER_MODEL = 'core.User'
 
 ASGI_APPLICATION = 'app.routing.channel_routing'
@@ -173,3 +179,9 @@ from glob import glob
 
 GDAL_LIBRARY_PATH=glob('/usr/lib/libgdal.so.*')[0]
 GEOS_LIBRARY_PATH=glob('/usr/lib/libgeos_c.so.*')[0]
+
+def show_toolbar(request):
+    return True
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK" : show_toolbar,
+}

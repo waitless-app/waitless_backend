@@ -149,14 +149,16 @@ class PrivatePremisesApiTests(TestCase):
             'name': 'New Name',
             'image': BASE64_IMAGE,
             'city': 'Warsaw',
-            'address': "Peace 420"
+            'address': "Peace 420",
+            'country': 'Poland',
+            'postcode': '84-230'
         }
 
         url = detail_url(premises.id)
-        self.client.put(url, payload)
-
+        res = self.client.put(url, payload)
         premises.refresh_from_db()
-
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        premises = Premises.objects.get(id=res.data['id'])
         self.assertEqual(premises.name, payload['name'])
         self.assertEqual(premises.address, payload['address'])
         self.assertEqual(premises.city, payload['city'])

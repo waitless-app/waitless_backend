@@ -22,15 +22,12 @@ class PremisesViewSet(viewsets.ModelViewSet):
         try:
             # TODO create wrapper for header
             if(self.request.META['HTTP_X_SOURCE_WEB']):
-                print('HEADER MATCH')
                 return self.queryset.filter(owner=self.request.user)
         except KeyError:
             return self.queryset
 
     def get_serializer_class(self):
         """Return appropriate serializer class"""
-        # if self.action == 'retreive':
-        #     return serializers.PremisesDetailSerializer
         return self.serializer_class
 
     def perform_create(self, serializer):
