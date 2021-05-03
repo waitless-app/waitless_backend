@@ -24,7 +24,7 @@ class PremisesViewSet(viewsets.ModelViewSet):
             if(self.request.META['HTTP_X_SOURCE_WEB']):
                 return self.queryset.filter(owner=self.request.user)
         except KeyError:
-            return self.queryset
+            return self.queryset.all()
 
     def get_serializer_class(self):
         """Return appropriate serializer class"""
@@ -37,7 +37,13 @@ class PremisesViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def menu(self, request, **kwargs):
         instance = self.get_object()
-        menu = Menu.objects.filter(premises=instance, is_default=True)
+        menu = None
+        try:
+            # TODO create wrapper for header
+            if(self.request.META['HTTP_X_SOURCE_WEB']):
+                menu = Menu.objects.filter(premises=instance)
+        except KeyError:
+            menu = Menu.objects.filter(premises=instance, is_default=True)
         serializer = MenuProductsSerializer(menu, many=True)
         return Response(serializer.data)
 
