@@ -17,9 +17,7 @@ class OrderView(viewsets.ReadOnlyModelViewSet):
         print(user.group)
         if user.group == "vendor":
             premises = self.request.query_params.get('premises', -1)
-            return Order.objects.filter(
-                Q(status=Order.REQUESTED) | Q(premises=premises)
-            )
+            return Order.objects.filter(premises=premises)  
         if user.group == 'customer':
             return Order.objects.filter(customer=user)
         return Order.objects.none()
