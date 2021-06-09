@@ -142,16 +142,10 @@ class Order(models.Model):
         null=True,
         related_name='orders_as_customer'
     )
-    vendor = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True,
-        related_name='orders_as_vendor'
-    )
     premises = models.ForeignKey(
         Premises,
         on_delete=models.CASCADE,
+        related_name='orders_as_premises'
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
