@@ -14,11 +14,13 @@ class OrderView(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        print(user.group)
         if user.group == "vendor":
+            premises = self.request.query_params.get('premises', -1)
             return Order.objects.filter(
-                Q(status=Order.REQUESTED) | Q(vendor=user)
+                Q(status=Order.REQUESTED) | Q(premises=premises)
             )
         if user.group == 'customer':
             return Order.objects.filter(customer=user)
         return Order.objects.none()
-    
+
