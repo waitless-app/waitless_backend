@@ -1,5 +1,5 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
-from orders.serializers import ReadOnlyOrderSerializer, OrderSerializer, UpdateOrderSerializer
+from orders.serializers import OrderProductSerializer, ReadOnlyOrderSerializer, OrderSerializer, UpdateOrderSerializer
 from channels.db import database_sync_to_async
 from core.models import Order
 from collections import defaultdict
@@ -16,21 +16,22 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
     async def connect(self):
         user = self.scope['user']
+        print('connect')
         if user.is_anonymous:
             await self.close()
+            print('close')
         else:
             channel_groups = []
 
             # Get user groups
             user_group = await self._get_user_group(self.scope['user'])
 
-            # If user is vendor add him to vendor group
+            # If user is vendor add him according premises channel
             if user_group == 'vendor':
                 channel_groups.append(self.channel_layer.group_add(
                     group='vendor',
                     channel=self.channel_name
                 ))
-
             # tu jest cos pojebane ale dziala
             orderset = await self._get_orders(self.scope['user'])
             self.orders = set(orderset)
@@ -66,7 +67,7 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         event['data'].update({"status" : "ACCEPTED"})
         await self.send_json({'data' : event})
         await self.update_order(event)
-    
+
     async def ready_order(self, event):
         my_dict = defaultdict(dict)
         event['data'].update({"status" : "READY", "ready_time" : timezone.now()})
@@ -80,7 +81,7 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
     async def create_order(self, event):
         order = await self._create_order(event.get('data'))
         order_id = f'{order.id}'
-        order_data = ReadOnlyOrderSerializer(order).data
+        order_data = await self._deserialize_order(order)
 
         # send user requests to all vendors.
         await self.channel_layer.group_send(group='vendor', message={
@@ -102,12 +103,16 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         })
 
     async def update_order(self, event):
+        print(event)
         order = await self._update_order(event.get('data'))
         order_id = f'{order.id}'
         # await self.send_json({'data': str(order)})
-
-        order_data = ReadOnlyOrderSerializer(order).data
-
+        # print(order)
+        # serializer = ReadOnlyOrderSerializer(order)
+        # print('serializer', serializer)
+        # print('serializer data', serializer.data)
+        order_data = await self._deserialize_order(order)
+        print(order_data)
         # send updates to vendors that subscribe to this order.
         await self.channel_layer.group_send(group=order_id, message={
             'type': 'echo.message',
@@ -122,7 +127,6 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
                 group=order_id,
                 channel=self.channel_name
             )
-
         await self.send_json({
             'type': 'update_trip',
             'data': order_data
@@ -156,10 +160,23 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def _create_order(self, content):
-        serializer = OrderSerializer(data=content)
-        serializer.is_valid(raise_exception=True)
-        order = serializer.create(serializer.validated_data)
+        # Pop products from order and validate seperatly
+        order_products = content.pop('order_products')
+        print(order_products)
+        order_serializer = OrderSerializer(data=content)
+        # Do not validate Order Products since it does not exists on model
+        order_serializer.is_valid(raise_exception=True)
+        data = {'order_products': order_products, **order_serializer.validated_data}
+        print('messed_up', data)
+        order = order_serializer.create(data)
+        # order = order_serializer.create(order_serializer.validated_data)
+        print('it works', order)
         return order
+
+    @database_sync_to_async
+    def _deserialize_order(self, order):
+        data = ReadOnlyOrderSerializer(order).data
+        return data
 
     @database_sync_to_async
     def _get_orders(self, user):
@@ -167,7 +184,8 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             raise Exception('User is not authenticated.')
         user_groups = user.groups.values_list('name', flat=True)
         if 'vendor' in user_groups:
-            orders = user.orders_as_vendor.exclude(
+            # TODO - TAKE PREMISES FROM PARAMETER NOT FIRST
+            orders = user.user_premises.first().orders_as_premises.exclude(
                 status=Order.COMPLETED
             ).only('id').values_list('id', flat=True)
         else:
@@ -183,9 +201,10 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         serializer.is_valid(raise_exception=True)
         order = serializer.update(instance, serializer.validated_data)
         #if u remove print u get an error ???
+        print('_update_order', order)
         return order
     @database_sync_to_async
     def _get_user_group(self, user):
         if not user.is_authenticated:
             raise Exception('User is not authenticated.')
-        return user.groups.first().name
+        return user.groups.first()

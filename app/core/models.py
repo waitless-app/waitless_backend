@@ -67,6 +67,7 @@ class Premises(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
+        related_name='user_premises'
     )
     name = models.CharField(max_length=255)
     image = models.FileField(upload_to='product')
