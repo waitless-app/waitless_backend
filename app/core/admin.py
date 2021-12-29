@@ -51,6 +51,9 @@ admin.site.register(models.User, UserAdmin)
 admin.site.register(models.Premises)
 admin.site.register(models.Order, OrderAdmin)
 admin.site.register(models.OrderProduct)
+admin.site.register(models.Product)
+admin.site.register(models.Menu)
+admin.site.register(models.ProductCategory)
 admin.site.unregister(Group)
 
 # Create a new Group admin.

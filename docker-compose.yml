@@ -1,33 +1,36 @@
 version: "3"
 
-services: 
+services:
     redis:
         image: redis
         command: redis-server
         ports:
             - "6379:6397"
     app:
-        build: 
+        build:
             context: .
-        ports: 
+        ports:
             - "8000:8000"
         volumes:
             - ./app:/app
         command: >
-            sh -c "python manage.py wait_for_db && 
+            sh -c "python manage.py wait_for_db &&
+                   python manage.py check_connection &&
                    python manage.py migrate &&
                    python manage.py runserver 0.0.0.0:8000"
-        environment: 
+        environment:
             - DB_HOST=db
             - DB_NAME=app
             - DB_USER=postgres
             - DB_PASS=sspassword
-        depends_on: 
+        depends_on:
             - db
+        env_file:
+            - .env
     db:
-        image: postgres:10-alpine
-        environment: 
+        image: postgis/postgis:9.6-2.5-alpine
+        environment:
             - POSTGRES_DB=app
             - POSTGRES_USER=postgres
             - POSTGRES_PASSWORD=sspassword
-        
+

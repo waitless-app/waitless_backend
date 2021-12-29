@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.gis.geos import Point
 from django.test import TestCase
 from django.urls import reverse
 
@@ -9,8 +10,9 @@ from core.models import Premises
 
 from premises.serializers import PremisesSerializer, PremisesDetailSerializer
 
-
 PREMISES_URL = reverse('premises:premises-list')
+BASE64_IMAGE = 'data:image/png;base64,' \
+               'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg== '
 
 
 def sample_premises(**params):
@@ -21,13 +23,17 @@ def sample_premises(**params):
     )
     defaults = {
         'name': 'Sztoss',
-        'image_url': 'https://via.placeholder.com/350x150',
+        'image': BASE64_IMAGE,
         'city': 'Gdynia',
-        'owner': owner
+        'country': 'Poland',
+        'postcode': '88-888',
+        'address': 'Sample Address 121',
     }
     defaults.update(params)
 
-    return Premises.objects.create(**defaults)
+    serializer = PremisesSerializer(data=defaults)
+    serializer.is_valid(raise_exception=True)
+    return Premises.objects.create(**serializer.validated_data, owner=owner)
 
 
 def detail_url(premises_id):
@@ -62,7 +68,7 @@ class PrivatePremisesApiTests(TestCase):
     def test_retrive_premises(self):
         """Test retreiving a list of premises"""
         sample_premises()
-        #should be second premises created
+        # should be second premises created
 
         res = self.client.get(PREMISES_URL)
 
@@ -107,14 +113,20 @@ class PrivatePremisesApiTests(TestCase):
         )
         payload = {
             'name': 'Sztoss',
-            'image_url': 'https://via.placeholder.com/350x150',
+            'image': BASE64_IMAGE,
             'city': 'Gdynia',
+            'country': 'Poland',
+            'postcode': '88-888',
+            'address': 'Sample Address 121',
         }
         res = self.client.post(PREMISES_URL, payload)
+        print(res.json())
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         premises = Premises.objects.get(id=res.data['id'])
         for key in payload.keys():
-            self.assertEqual(payload[key], getattr(premises, key))
+            # Do not check image, Base64 is not equal to FieldFile
+            if key != 'image':
+                self.assertEqual(payload[key], getattr(premises, key))
 
     def test_partial_update_premises(self):
         """Test updating premises with patch"""
@@ -122,7 +134,6 @@ class PrivatePremisesApiTests(TestCase):
 
         payload = {
             'name': 'Viking',
-            'image_url': 'https://via.placeholder.com/350x150',
         }
 
         url = detail_url(premises.id)
@@ -135,16 +146,19 @@ class PrivatePremisesApiTests(TestCase):
         """Test updating a premises with put"""
         premises = sample_premises()
         payload = {
-            'name': 'Sztoss',
-            'image_url': 'https://via.placeholder.com/350x150',
-            'city': 'Gdańsk',
+            'name': 'New Name',
+            'image': BASE64_IMAGE,
+            'city': 'Warsaw',
+            'address': "Peace 420",
+            'country': 'Poland',
+            'postcode': '84-230'
         }
 
         url = detail_url(premises.id)
-        self.client.put(url, payload)
-
+        res = self.client.put(url, payload)
         premises.refresh_from_db()
-
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        premises = Premises.objects.get(id=res.data['id'])
         self.assertEqual(premises.name, payload['name'])
-        self.assertEqual(premises.image_url, payload['image_url'])
+        self.assertEqual(premises.address, payload['address'])
         self.assertEqual(premises.city, payload['city'])

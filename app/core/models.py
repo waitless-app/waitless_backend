@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.contrib.gis.db.models import PointField
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
@@ -50,6 +51,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         return groups[0].name if groups else None
 
 
+class Tag(models.Model):
+    name = models.CharField(max_length=255)
+    owner = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
 
 class Premises(models.Model):
     """Premises object"""
@@ -58,12 +69,19 @@ class Premises(models.Model):
         on_delete=models.CASCADE,
     )
     name = models.CharField(max_length=255)
-    image_url = models.CharField(max_length=255)
+    image = models.FileField(upload_to='product')
     city = models.CharField(max_length=255, blank=True)
-    # default_menu = models.ForeignKey(Menu, models.SET_NULL, blank=True, null=True)
+    tags = models.ManyToManyField(Tag, blank=True)
+    description = models.TextField(null=True)
+    country = models.CharField(max_length=255)
+    city = models.CharField(max_length=255)
+    postcode = models.CharField(max_length=255)
+    address = models.CharField(max_length=255)
+    location = PointField(null=False, blank=False, srid=4326, verbose_name='Location')
 
     def __str__(self):
         return self.name
+
 
 class Menu(models.Model):
     name = models.CharField(max_length=255)
@@ -72,6 +90,15 @@ class Menu(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ProductCategory(models.Model):
+    name = models.CharField(max_length=255)
+    premises = models.ForeignKey(Premises, null=True, on_delete=models.SET_NULL)
+
+    def __str__(self):
+        return self.name
+
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -82,6 +109,8 @@ class Product(models.Model):
     estimated_creation_time = models.DecimalField(max_digits=5, decimal_places=2)
     menu = models.ForeignKey(Menu, models.SET_NULL, blank=True, null=True, related_name="products")
     premises = models.ForeignKey(Premises, on_delete=models.CASCADE)
+    image = models.FileField(upload_to='product')
+    group = models.ForeignKey(ProductCategory, default=None, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return self.name
@@ -137,6 +166,7 @@ class Order(models.Model):
 
     def get_absolute_url(self):
         return reverse('order:order_detail', kwargs={'order_id': self.id})
+
 
 class OrderProduct(models.Model):
     id = models.AutoField(primary_key=True)

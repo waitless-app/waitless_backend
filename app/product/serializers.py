@@ -2,11 +2,14 @@ from rest_framework import serializers
 
 from core.models import Menu, Product, Premises
 
+from premises.serializers import PremisesSerializer
 
+from app.serializer_custom_fields import Base64ImageField
 
 
 class ProductSerializer(serializers.ModelSerializer):
     """ serializer to product object"""
+    image = Base64ImageField(max_length=None)
 
     class Meta:
         model = Product
@@ -18,7 +21,7 @@ class ProductListingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['name','price','description']
+        fields = ['name','price','description', 'image']
 
 class MenuSerializer(serializers.ModelSerializer):
     """ serializer to menu object"""
@@ -30,6 +33,7 @@ class MenuSerializer(serializers.ModelSerializer):
 
 class MenuProductsSerializer(serializers.ModelSerializer):
     products = ProductListingSerializer(many=True)
+    premises = PremisesSerializer()
     class Meta:
         model = Menu
         fields = '__all__'
