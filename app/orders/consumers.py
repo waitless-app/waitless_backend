@@ -16,10 +16,9 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
     async def connect(self):
         user = self.scope['user']
-        print('connect')
         if user.is_anonymous:
             await self.close()
-            print('close')
+            print('## Anonymous user connected')
         else:
             channel_groups = []
 
@@ -27,11 +26,21 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             user_group = await self._get_user_group(self.scope['user'])
 
             # If user is vendor add him according premises channel
-            if user_group == 'vendor':
+            # if user is venoor add him to premises group if premises does not exist disconnect.
+
+            print("## User connected as", user_group)
+            if str(user_group) == 'vendor':
                 channel_groups.append(self.channel_layer.group_add(
                     group='vendor',
                     channel=self.channel_name
                 ))
+                premises_id = await self._get_vendor_premises(user)
+                print('## Vendor is added to premises channel', str(premises_id))
+                channel_groups.append(self.channel_layer.group_add(
+                    group=str(premises_id),
+                    channel=self.channel_name
+                ))
+
             # tu jest cos pojebane ale dziala
             orderset = await self._get_orders(self.scope['user'])
             self.orders = set(orderset)
@@ -45,6 +54,8 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
     async def receive_json(self, content, **kwargs):
         # ADD try to check json
         message_type = content.get('type')
+        print(message_type)
+
         if message_type == 'create.order':
             await self.create_order(content)
         if message_type == 'test':
@@ -83,12 +94,15 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         order_id = f'{order.id}'
         order_data = await self._deserialize_order(order)
 
-        # send user requests to all vendors.
-        await self.channel_layer.group_send(group='vendor', message={
+        # send user requests to premises group.
+        premises_channel = order_data.get('premises').get('id')
+
+        await self.channel_layer.group_send(group=str(premises_channel), message={
             'type': 'echo.message',
             'data': order_data
         })
         # Handle only if order is not being tracked.
+        print("## Order is sent to channel 5", str(premises_channel))
         if order_id not in self.orders:
             self.orders.add(order_id)
             # add this channel to new order group.
@@ -162,15 +176,15 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
     def _create_order(self, content):
         # Pop products from order and validate seperatly
         order_products = content.pop('order_products')
-        print(order_products)
+        print("## Order content passed to serailizer 1", content)
         order_serializer = OrderSerializer(data=content)
         # Do not validate Order Products since it does not exists on model
         order_serializer.is_valid(raise_exception=True)
         data = {'order_products': order_products, **order_serializer.validated_data}
-        print('messed_up', data)
+        print("## Order data used in create method 2", data)
         order = order_serializer.create(data)
         # order = order_serializer.create(order_serializer.validated_data)
-        print('it works', order)
+        print('## Created order with id 3', order)
         return order
 
     @database_sync_to_async
@@ -208,3 +222,7 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         if not user.is_authenticated:
             raise Exception('User is not authenticated.')
         return user.groups.first()
+
+    @database_sync_to_async
+    def _get_vendor_premises(self, vendor):
+        return vendor.user_premises.first().id

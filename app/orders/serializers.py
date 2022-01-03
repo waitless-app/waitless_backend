@@ -33,8 +33,6 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created', 'updated')
 
     def create(self, validated_data):
-        # TODO
-        print('create', validated_data)
         # becuase order_products is marked as ReadOnly function is_valid does not pass in to validated_data
         order_products = validated_data.pop('order_products')
         order = Order.objects.create(**validated_data)
@@ -44,7 +42,6 @@ class OrderSerializer(serializers.ModelSerializer):
         return order
 
     def is_valid(self, raise_exception=False):
-        print('is_valid', self.initial_data)
         assert not hasattr(self, 'restore_object'), (
             'Serializer `%s.%s` has old-style version 2 `.restore_object()` '
             'that is no longer compatible with REST framework 3. '
@@ -61,7 +58,9 @@ class OrderSerializer(serializers.ModelSerializer):
             try:
                 self._validated_data = self.run_validation(self.initial_data)
             except ValidationError as exc:
-                print('VALIDATION ERROR')
+                print('## VALIDATED DATA', self._validated_data)
+                print('## INITIAL DATA', self.initial_data)
+                print('## VALIDATION ERROR', exc)
                 self._validated_data = {}
                 self._errors = exc.detail
             else:
@@ -69,6 +68,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
         if self._errors and raise_exception:
             raise ValidationError(self.errors)
+            # print('is_valid', self.initial_data)
 
         return not bool(self._errors)
 
