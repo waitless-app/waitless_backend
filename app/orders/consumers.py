@@ -21,13 +21,10 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             print('## Anonymous user connected')
         else:
             channel_groups = []
-
             # Get user groups
             user_group = await self._get_user_group(self.scope['user'])
 
             # If user is vendor add him according premises channel
-            # if user is venoor add him to premises group if premises does not exist disconnect.
-
             print("## User connected as", user_group)
             if str(user_group) == 'vendor':
                 channel_groups.append(self.channel_layer.group_add(
@@ -41,43 +38,47 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
                     channel=self.channel_name
                 ))
 
-            # tu jest cos pojebane ale dziala
+
             orderset = await self._get_orders(self.scope['user'])
             self.orders = set(orderset)
 
             for order in self.orders:
+                print("Customer added to channel - ", order)
                 channel_groups.append(
                     self.channel_layer.group_add(order, self.channel_name))
             asyncio.gather(*channel_groups)
             await self.accept()
 
     async def receive_json(self, content, **kwargs):
-        # ADD try to check json
         message_type = content.get('type')
         print(message_type)
 
         if message_type == 'create.order':
             await self.create_order(content)
-        if message_type == 'test':
-            await self.send_json({
-                'type': 'testresponse',
-                'data': content
-            })
         if message_type == 'update.order':
             await self.update_order(content)
         if message_type == 'accept.order':
             await self.accept_order(content)
         if message_type == 'ready.order':
             await self.ready_order(content)
+        if message_type == 'test':
+            await self.send_json({
+                'type': 'testresponse',
+                'data': content
+            })
 
-    async def echo_message(self, event):
+    # async def echo_message(self, event):
+    #     print("ECHO MESSAGE", event.get('data').get('id'))
+    #     await self.send_json(event)
+
+    async def order_notification(self, event):
+        print("ECHO MESSAGE", event.get('data').get('id'))
         await self.send_json(event)
 
     async def accept_order(self, event):
         my_dict = defaultdict(dict)
         event['data'].update({"status" : "ACCEPTED"})
         await self.update_order(event)
-        await self.send_json({'data' : event})
 
     async def ready_order(self, event):
         my_dict = defaultdict(dict)
@@ -98,11 +99,12 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         premises_channel = order_data.get('premises').get('id')
 
         await self.channel_layer.group_send(group=str(premises_channel), message={
-            'type': 'echo.message',
+            'type': 'order.notification',
             'data': order_data
         })
+
         # Handle only if order is not being tracked.
-        print("## Order is sent to channel 5", str(premises_channel))
+        print("## Order is sent to channel", str(premises_channel))
         if order_id not in self.orders:
             self.orders.add(order_id)
             # add this channel to new order group.
@@ -117,23 +119,26 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         })
 
     async def update_order(self, event):
-        print(event)
         order = await self._update_order(event.get('data'))
         order_id = f'{order.id}'
-        # await self.send_json({'data': str(order)})
-        # print(order)
-        # serializer = ReadOnlyOrderSerializer(order)
-        # print('serializer', serializer)
-        # print('serializer data', serializer.data)
+
         order_data = await self._deserialize_order(order)
-        print(order_data)
-        # send updates to vendors that subscribe to this order.
+
+        # send updates to customers that subscribe to this order.
+        print("Order updates sending response to group", order_id)
+
+
+        # await self.channel_layer.group_send(group=order_id, message={
+        #     'type': 'echo.message',
+        #     'data': order_data
+        # })
+
         await self.channel_layer.group_send(group=order_id, message={
-            'type': 'echo.message',
+            'type': 'order.notification',
             'data': order_data
         })
 
-        # handle add only if trip is not being tracked.
+        # handle add only if order is not being tracked.
         # this happens when a vendors accept a request.
         if order_id not in self.orders:
             self.orders.add(order_id)
@@ -141,10 +146,13 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
                 group=order_id,
                 channel=self.channel_name
             )
+
+        # This goes to vendor
         await self.send_json({
-            'type': 'update_trip',
+            'type': 'update_order',
             'data': order_data
         })
+
     async def disconnect(self, code):
         # Remove this channel from every order group.
         channel_groups = [
@@ -164,13 +172,6 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         self.orders.clear()
 
         await super().disconnect(code)
-
-    # @database_sync_to_async
-    # def test_get_order(orderid):
-    #     instance = Order.objects.get(id=order_id)
-    #     serializer = ReadOnlyOrderSerializer(instance).data
-    #     print(serializer)
-    #     return serializer
 
     @database_sync_to_async
     def _create_order(self, content):
@@ -214,9 +215,8 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         serializer = UpdateOrderSerializer(data=content, partial=True)
         serializer.is_valid(raise_exception=True)
         order = serializer.update(instance, serializer.validated_data)
-        #if u remove print u get an error ???
-        print('_update_order', order)
         return order
+
     @database_sync_to_async
     def _get_user_group(self, user):
         if not user.is_authenticated:
