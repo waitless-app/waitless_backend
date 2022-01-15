@@ -180,6 +180,7 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         print("## Order content passed to serailizer 1", content)
         order_serializer = OrderSerializer(data=content)
         # Do not validate Order Products since it does not exists on model
+        # TODO validate order products
         order_serializer.is_valid(raise_exception=True)
         data = {'order_products': order_products, **order_serializer.validated_data}
         print("## Order data used in create method 2", data)

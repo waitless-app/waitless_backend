@@ -1,3 +1,4 @@
+import random
 import uuid
 
 from django.db import models
@@ -155,12 +156,25 @@ class Order(models.Model):
     status = models.CharField(
         max_length=20, choices=STATUSES, default=REQUESTED)
     order_comment = models.TextField(max_length=500, null=True)
+    pickup_code = models.CharField(
+        max_length=10,
+        null=True,
+        editable=False,
+        unique=True,
+        default=None
+    )
 
     def __str__(self):
         return f'{self.id}'
 
     def get_absolute_url(self):
         return reverse('order:order_detail', kwargs={'order_id': self.id})
+
+    def generate_order_pickup_code(self):
+        self.pickup_code = str(random.randint(100000, 999999))
+
+    def clear_order_pickup_code(self):
+        self.pickup_code = str(000000)
 
 
 class OrderProduct(models.Model):

@@ -1,3 +1,8 @@
+import random
+
+from rest_framework.serializers import raise_errors_on_nested_writes
+from rest_framework.utils import model_meta
+
 from core.models import Order, Premises, OrderProduct, Product
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -41,6 +46,7 @@ class OrderSerializer(serializers.ModelSerializer):
                 OrderProduct.objects.create(order=order, product=Product.objects.get(id=product))
         return order
 
+
     def is_valid(self, raise_exception=False):
         assert not hasattr(self, 'restore_object'), (
             'Serializer `%s.%s` has old-style version 2 `.restore_object()` '
@@ -74,9 +80,42 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class UpdateOrderSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Order
         exclude = ['premises']
+
+    def update(self, instance, validated_data):
+        raise_errors_on_nested_writes('update', self, validated_data)
+        info = model_meta.get_field_info(instance)
+
+        # Simply set each attribute on the instance, and then save it.
+        # Note that unlike `.create()` we don't need to treat many-to-many
+        # relationships as being a special case. During updates we already
+        # have an instance pk for the relationships to be associated with.
+        m2m_fields = []
+        for attr, value in validated_data.items():
+            if attr in info.relations and info.relations[attr].to_many:
+                m2m_fields.append((attr, value))
+            else:
+                setattr(instance, attr, value)
+        # TODO write tests for it
+        if instance.status == "READY":
+            instance.generate_order_pickup_code()
+
+        if instance.status == "COMPLETED":
+            instance.clear_order_pickup_code()
+
+        instance.save()
+
+        # Note that many-to-many fields are set after updating instance.
+        # Setting m2m fields triggers signals which could potentially change
+        # updated instance and we do not want it to collide with .update()
+        for attr, value in m2m_fields:
+            field = getattr(instance, attr)
+            field.set(value)
+
+        return instance
 
 class ReadOnlyOrderSerializer(serializers.ModelSerializer):
     # premises = serializers.PrimaryKeyRelatedField(queryset=Premises.objects.all())
