@@ -61,6 +61,8 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             await self.accept_order(content)
         if message_type == 'ready.order':
             await self.ready_order(content)
+        if message_type == 'complete.order':
+            await self.collect_order(content)
         if message_type == 'test':
             await self.send_json({
                 'type': 'testresponse',

@@ -174,7 +174,7 @@ class Order(models.Model):
         self.pickup_code = str(random.randint(100000, 999999))
 
     def clear_order_pickup_code(self):
-        self.pickup_code = str(000000)
+        self.pickup_code = self._meta.get_field('pickup_code').get_default()
 
 
 class OrderProduct(models.Model):
