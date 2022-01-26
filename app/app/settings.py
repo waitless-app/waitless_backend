@@ -30,7 +30,7 @@ ALLOWED_HOSTS = [
     '0.0.0.0',
     '192.168.2.11',
     '127.0.0.1',
-	'*'
+    '*'
 ]
 
 # Application definition
@@ -65,8 +65,7 @@ INSTALLED_APPS = [
     # 'debug_toolbar',
 ]
 
-
-CORS_ORIGIN_ALLOW_ALL = True # If this is used then `CORS_ORIGIN_WHITELIST` will not have any effect
+CORS_ORIGIN_ALLOW_ALL = True  # If this is used then `CORS_ORIGIN_WHITELIST` will not have any effect
 CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'app.urls'
@@ -191,8 +190,8 @@ LOGGING = {
 
 from glob import glob
 
-GDAL_LIBRARY_PATH=glob('/usr/lib/libgdal.so.*')[0]
-GEOS_LIBRARY_PATH=glob('/usr/lib/libgeos_c.so.*')[0]
+GDAL_LIBRARY_PATH = glob('/usr/lib/libgdal.so.*')[0]
+GEOS_LIBRARY_PATH = glob('/usr/lib/libgeos_c.so.*')[0]
 
 from corsheaders.defaults import default_headers
 

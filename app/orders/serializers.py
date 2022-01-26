@@ -20,21 +20,29 @@ class OrderProductSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('id',)
 
+
 class OrderProductListingField(serializers.ModelSerializer):
     """ serializer for lisitng order products"""
-    product = ProductListingSerializer()
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), required=True)
 
     class Meta:
         model = OrderProduct
         fields = ['product', 'quantity']
 
+    def to_representation(self, instance):
+        self.fields['product'] = ProductListingSerializer()
+        return super(OrderProductListingField, self).to_representation(instance)
+
+
 class OrderSerializer(serializers.ModelSerializer):
     """ serializer for creating and updating orders"""
+
     # order_products = serializers.RelatedField(queryset=OrderProduct.objects.all(), many=True)
 
     class Meta:
         model = Order
         fields = '__all__'
+        extra_field = 'total_cost'
         read_only_fields = ('id', 'created', 'updated')
 
     def create(self, validated_data):
@@ -43,16 +51,17 @@ class OrderSerializer(serializers.ModelSerializer):
         order = Order.objects.create(**validated_data)
         if order_products:
             for product in order_products:
-                OrderProduct.objects.create(order=order, product=Product.objects.get(id=product))
+                product_id = product.get('product')
+                quantity = product.get('quantity')
+                OrderProduct.objects.create(order=order, product=Product.objects.get(id=product_id), quantity=quantity)
         return order
-
 
     def is_valid(self, raise_exception=False):
         assert not hasattr(self, 'restore_object'), (
-            'Serializer `%s.%s` has old-style version 2 `.restore_object()` '
-            'that is no longer compatible with REST framework 3. '
-            'Use the new-style `.create()` and `.update()` methods instead.' %
-            (self.__class__.__module__, self.__class__.__name__)
+                'Serializer `%s.%s` has old-style version 2 `.restore_object()` '
+                'that is no longer compatible with REST framework 3. '
+                'Use the new-style `.create()` and `.update()` methods instead.' %
+                (self.__class__.__module__, self.__class__.__name__)
         )
 
         assert hasattr(self, 'initial_data'), (
@@ -80,7 +89,6 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class UpdateOrderSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Order
         exclude = ['premises']
@@ -117,18 +125,16 @@ class UpdateOrderSerializer(serializers.ModelSerializer):
 
         return instance
 
+
 class ReadOnlyOrderSerializer(serializers.ModelSerializer):
     # premises = serializers.PrimaryKeyRelatedField(queryset=Premises.objects.all())
     # above works but PremisesSerializer() does not
     premises = PremisesSerializer(read_only=True)
     customer = UserSerializer(read_only=True)
-    vendor = UserSerializer(read_only=True)
     order_products = OrderProductListingField(many=True)
 
     class Meta:
         model = Order
-        fields = '__all__'
-
-
-
-
+        fields = (
+            'id', 'premises', 'customer', 'created', 'updated', 'ready_time', 'collected_time', 'status',
+            'order_comment', 'pickup_code', 'total_cost', 'order_products', )

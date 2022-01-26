@@ -164,6 +164,14 @@ class Order(models.Model):
         default=None
     )
 
+    @property
+    def total_cost(self):
+        total = 0
+        for order_product in self.order_products.all():
+            total += order_product.product.price * order_product.quantity
+        # Cannot serialize decimal out of the box
+        return str(total)
+
     def __str__(self):
         return f'{self.id}'
 

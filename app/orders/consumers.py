@@ -1,5 +1,6 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
-from orders.serializers import OrderProductSerializer, ReadOnlyOrderSerializer, OrderSerializer, UpdateOrderSerializer
+from orders.serializers import OrderProductSerializer, ReadOnlyOrderSerializer, OrderSerializer, UpdateOrderSerializer, \
+    OrderProductListingField
 from channels.db import database_sync_to_async
 from core.models import Order
 from collections import defaultdict
@@ -182,8 +183,10 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         print("## Order content passed to serailizer 1", content)
         order_serializer = OrderSerializer(data=content)
         # Do not validate Order Products since it does not exists on model
-        # TODO validate order products
+        print(order_products)
+        order_products_serializer = OrderProductListingField(data=order_products, many=True)
         order_serializer.is_valid(raise_exception=True)
+        order_products_serializer.is_valid(raise_exception=True)
         data = {'order_products': order_products, **order_serializer.validated_data}
         print("## Order data used in create method 2", data)
         order = order_serializer.create(data)
