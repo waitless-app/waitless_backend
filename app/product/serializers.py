@@ -21,7 +21,7 @@ class ProductListingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['name','price','description', 'image']
+        fields = ['name','price','description', 'image', 'id']
 
 class MenuSerializer(serializers.ModelSerializer):
     """ serializer to menu object"""

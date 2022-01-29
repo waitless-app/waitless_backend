@@ -2,6 +2,7 @@ from channels.testing import WebsocketCommunicator
 from django.contrib.auth import get_user_model
 from channels.db import database_sync_to_async
 from channels.layers import get_channel_layer
+from django.contrib.gis.geos import Point
 from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth.models import Group
 from core.models import Order, Premises, Menu, Product
@@ -32,6 +33,7 @@ async def auth_connect(user):
 def create_order(**kwargs):
     return Order.objects.create(**kwargs)
 
+
 @pytest.fixture()
 def customer():
     user = get_user_model().objects.create_user(
@@ -44,12 +46,12 @@ def customer():
 
 @database_sync_to_async
 @pytest.fixture()
-def premises():
-    owner = get_user_model().objects.create_user(email='owner@onboard.io', password='password')
+def premises(vendor):
     premises = Premises.objects.create(
         name='Pizzarini',
         city='Warsaw',
-        owner=owner
+        owner=vendor,
+        location=Point(0.0, 0.0)
     )
     return premises
 
@@ -64,9 +66,8 @@ def menu(premises):
     )
     return menu
 
-
 @database_sync_to_async
-@pytest.fixture(scope='session')
+@pytest.fixture()
 def vendor():
     user = get_user_model().objects.create_user(
         email='vendor@vendor.com',
@@ -79,14 +80,15 @@ def vendor():
     user.save()
     return user
 
+
 @database_sync_to_async
-async def create_product(premises, menu, **params):
+def create_product(premises, menu, **params):
     defaults = {
-            'name' : 'Cerveza',
-            'description' : 'Really cold American Pale Ale',
-            'price' : 9.99,
-            'ingredients' : 'Hop, Water, Yeast',
-            'estimated_creation_time' : 5.30,
+        'name': 'Cerveza',
+        'description': 'Really cold American Pale Ale',
+        'price': 9.99,
+        'ingredients': 'Hop, Water, Yeast',
+        'estimated_creation_time': 5.30,
 
     }
     defaults.update(params)
@@ -95,20 +97,19 @@ async def create_product(premises, menu, **params):
 
 
 async def connect_and_create_order(user, status, premises, menu):
-    product_one = create_product(premises=premises, menu=menu, name='Piwko')
-    product_two = create_product(premises=premises, menu=menu, name='Cola')
+    product_one = await create_product(premises=premises, menu=menu, name='Piwko')
+    product_two = await create_product(premises=premises, menu=menu, name='Cola')
     communicator = await auth_connect(user)
-    
     await communicator.send_json_to({
         'type': 'create.order',
         'data': {
             'status': status,
             'customer': user.id,
             'premises': premises.id,
-            'products': [
+            'order_products': [
                 product_one.id,
                 product_two.id
-            ]
+            ],
         }
     })
     return communicator
@@ -132,7 +133,6 @@ async def connect_and_update_order(user, order, status, premises):
 @pytest.mark.django_db(transaction=True)
 class TestWebSocket:
 
-
     async def test_unauthorized_user_cannot_connect_to_socket(self, settings):
         settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
         communicator = WebsocketCommunicator(
@@ -153,152 +153,151 @@ class TestWebSocket:
         communicator = await connect_and_create_order(
             user=customer,
             status='REQUESTED',
-            premises=premises, 
+            premises=premises,
             menu=menu
         )
 
         response = await communicator.receive_json_from()
         data = response.get('data')
-        print(data)
 
         assert 'REQUESTED' == data['status']
 
-    # async def test_customer_is_added_to_order_groups_on_connect(self, settings, customer, premises):
-    #     settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
+    async def test_customer_is_added_to_order_groups_on_connect(self, settings, customer, premises, menu):
+        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
 
-    #     communicator = await connect_and_create_order(
-    #         user=customer,
-    #         status='REQUESTED',
-    #         premises=premises,
-    #         menu=self.menu
-    #     )
+        communicator = await connect_and_create_order(
+            user=customer,
+            status='REQUESTED',
+            premises=premises,
+            menu=menu
+        )
 
-    #     response = await communicator.receive_json_from()
-    #     data = response.get('data')
+        response = await communicator.receive_json_from()
+        data = response.get('data')
 
-    #     order_id = data['id']
-    #     message = {
-    #         'type': 'echo.message',
-    #         'data': 'This is test message'
-    #     }
+        order_id = data['id']
+        message = {
+            'type': 'echo.message',
+            'data': 'This is test message'
+        }
 
-    #     channel_layer = get_channel_layer()
-    #     await channel_layer.group_send(order_id, message=message)
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send(order_id, message=message)
 
-    #     response = await communicator.receive_json_from()
+        response = await communicator.receive_json_from()
 
-    #     assert message == response
+        assert message == response
 
-    #     await communicator.disconnect()
+        await communicator.disconnect()
 
-    # async def test_customer_is_added_to_order_groups_on_init(self, settings, customer, premises):
-    #     settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
+    async def test_customer_is_added_to_order_groups_on_init(self, settings, customer, premises):
+        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
 
-    #     order = await create_order(
-    #         status="REQUESTED",
-    #         premises=premises,
-    #         customer=customer,
-    #         menu=self.menu
-    #     )
+        order = await create_order(
+            status="REQUESTED",
+            premises=premises,
+            customer=customer,
+        )
 
-    #     # user should be added to users groups
-    #     communicator = await auth_connect(customer)
+        # user should be added to users groups
+        communicator = await auth_connect(customer)
 
-    #     message = {
-    #         'type': 'echo.message',
-    #         'data': 'This is test message'
-    #     }
+        message = {
+            'type': 'echo.message',
+            'data': 'This is test message'
+        }
 
-    #     channel_layer = get_channel_layer()
-    #     await channel_layer.group_send(f'{order.id}', message=message)
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send(f'{order.id}', message=message)
 
-    #     response = await communicator.receive_json_from()
-    #     assert message == response
+        response = await communicator.receive_json_from()
+        assert message == response
 
-    #     await communicator.disconnect()
+        await communicator.disconnect()
 
-    # async def test_vendor_can_update_an_order(self, settings, premises, vendor, menu):
-    #     settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
+    async def test_vendor_can_update_an_order(self, settings, premises, vendor, menu):
+        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
 
-    #     order = await create_order(
-    #         status="REQUESTED",
-    #         premises=premises,
-    #         menu=menu
-    #     )
+        order = await create_order(
+            status="REQUESTED",
+            premises=premises,
+        )
 
-    #     communicator = await connect_and_update_order(
-    #         user=vendor,
-    #         order=order,
-    #         status="IN_PROGRESS",
-    #         premises=premises, 
-    #     )
+        communicator = await connect_and_update_order(
+            user=vendor,
+            order=order,
+            status="IN_PROGRESS",
+            premises=premises,
+        )
 
-    #     response = await communicator.receive_json_from()
+        response = await communicator.receive_json_from()
 
-    #     data = response.get('data')
+        data = response.get('data')
 
-    #     assert data['status'] == 'IN_PROGRESS'
-    #     assert data['customer'] == None
-    #     assert data['vendor'].get('email') == vendor.email
+        assert data['status'] == 'IN_PROGRESS'
+        assert data['customer'] is None
+        assert data['premises'].get('id') == premises.id
 
-    #     await communicator.disconnect()
+        await communicator.disconnect()
+
+    async def test_vendor_is_alerted_on_order_create(self, settings, menu, customer, premises):
+        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
+
+        channel_layer = get_channel_layer()
+        await channel_layer.group_add(
+            group='vendor',
+            channel='test_channel'
+        )
+
+        communicator = await connect_and_create_order(
+            user=customer,
+            status="REQUESTED",
+            premises=premises,
+            menu=menu
+        )
+
+        response = await channel_layer.receive('test_channel')
+        data = response.get('data')
+
+        assert data['id'] != None
+        assert customer.email == data['customer'].get('email')
+
+        await communicator.disconnect()
 
     # async def test_vendor_is_added_to_order_group_on_update(self, settings, premises, vendor):
     #     settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
-
+    #
     #     order = await create_order(
     #         status="REQUESTED",
     #         premises=premises,
     #     )
-
+    #
     #     communicator = await connect_and_update_order(
     #         user=vendor,
     #         order=order,
     #         status=Order.IN_PROGRESS,
     #         premises=premises
     #     )
-
+    #
     #     response = await communicator.receive_json_from()
     #     data = response.get('data')
-
+    #
     #     order_id = data['id']
     #     message = {
     #         'type': 'echo.message',
     #         'data': 'This is test message'
     #     }
-
+    #
     #     channel_layer = get_channel_layer()
-
+    #
     #     await channel_layer.group_send(order_id, message=message)
-
+    #
     #     response = await communicator.receive_json_from()
-
+    #
     #     assert message == response
-
+    #
     #     await communicator.disconnect()
 
-    # async def test_vendor_is_alerted_on_order_create(self, settings, customer, premises):
-    #     settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
-
-    #     channel_layer = get_channel_layer()
-    #     await channel_layer.group_add(
-    #         group='vendor',
-    #         channel='test_channel'
-    #     )
-
-    #     communicator = await connect_and_create_order(
-    #         user=customer,
-    #         status="REQUESTED",
-    #         premises=premises
-    #     )
-
-    #     response = await channel_layer.receive('test_channel')
-    #     data = response.get('data')
-
-    #     assert data['id'] != None
-    #     assert customer.email == data['customer'].get('email')
-
-    #     await communicator.disconnect()
 
     # async def test_customer_is_alerted_on_order_update(self, settings, premises, vendor):
     #     settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
