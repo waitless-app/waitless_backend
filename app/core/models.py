@@ -45,7 +45,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
 
-    # traktuje groip to jako pole
     @property
     def group(self):
         groups = self.groups.all()
@@ -80,6 +79,7 @@ class Premises(models.Model):
     postcode = models.CharField(max_length=255)
     address = models.CharField(max_length=255)
     location = PointField(null=False, blank=False, srid=4326, verbose_name='Location')
+    active = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -153,6 +153,7 @@ class Order(models.Model):
     updated = models.DateTimeField(auto_now=True)
     ready_time = models.DateTimeField(null=True)
     collected_time = models.DateTimeField(null=True)
+    accept_time = models.DateTimeField(null=True)
     status = models.CharField(
         max_length=20, choices=STATUSES, default=REQUESTED)
     order_comment = models.TextField(max_length=500, null=True)

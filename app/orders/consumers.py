@@ -39,7 +39,6 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
                     channel=self.channel_name
                 ))
 
-
             orderset = await self._get_orders(self.scope['user'])
             self.orders = set(orderset)
 
@@ -70,27 +69,20 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
                 'data': content
             })
 
-    # async def echo_message(self, event):
-    #     print("ECHO MESSAGE", event.get('data').get('id'))
-    #     await self.send_json(event)
-
     async def order_notification(self, event):
         print("ECHO MESSAGE", event.get('data').get('id'))
         await self.send_json(event)
 
     async def accept_order(self, event):
-        my_dict = defaultdict(dict)
-        event['data'].update({"status" : "ACCEPTED"})
+        event['data'].update({"status": "ACCEPTED", "accept_time": timezone.now()})
         await self.update_order(event)
 
     async def ready_order(self, event):
-        my_dict = defaultdict(dict)
-        event['data'].update({"status" : "READY", "ready_time" : timezone.now()})
+        event['data'].update({"status": "READY", "ready_time": timezone.now()})
         await self.update_order(event)
 
     async def collect_order(self, event):
-        my_dict = defaultdict(dict)
-        event['data'].update({"status" : "COMPLETED", "collected_time" : timezone.now()})
+        event['data'].update({"status": "COMPLETED", "collected_time": timezone.now()})
         await self.update_order(event)
 
     async def create_order(self, event):
@@ -129,7 +121,6 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
         # send updates to customers that subscribe to this order.
         print("Order updates sending response to group", order_id)
-
 
         # await self.channel_layer.group_send(group=order_id, message={
         #     'type': 'echo.message',

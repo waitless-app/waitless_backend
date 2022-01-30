@@ -137,4 +137,4 @@ class ReadOnlyOrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = (
             'id', 'premises', 'customer', 'created', 'updated', 'ready_time', 'collected_time', 'status',
-            'order_comment', 'pickup_code', 'total_cost', 'order_products', )
+            'order_comment', 'pickup_code', 'total_cost', 'order_products', 'accept_time')
