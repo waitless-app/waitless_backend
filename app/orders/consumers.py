@@ -1,9 +1,8 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
-from orders.serializers import OrderProductSerializer, ReadOnlyOrderSerializer, OrderSerializer, UpdateOrderSerializer, \
+from orders.serializers import ReadOnlyOrderSerializer, OrderSerializer, UpdateOrderSerializer, \
     OrderProductListingField
 from channels.db import database_sync_to_async
 from core.models import Order
-from collections import defaultdict
 from django.utils import timezone
 import asyncio
 
@@ -54,7 +53,12 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         print(message_type)
 
         if message_type == 'create.order':
-            await self.create_order(content)
+            validated_order = await self.validate_order_creation(content)
+
+            if validated_order:
+                await self.create_order(content)
+            else:
+                await self.error_order(content)
         if message_type == 'update.order':
             await self.update_order(content)
         if message_type == 'accept.order':
@@ -84,6 +88,23 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
     async def collect_order(self, event):
         event['data'].update({"status": "COMPLETED", "collected_time": timezone.now()})
         await self.update_order(event)
+
+    async def error_order(self, event):
+        await self.send_json({
+            'type': 'order.error',
+            'data': 'You can only have 1 active order per premises'
+        })
+
+    async def validate_order_creation(self, event):
+        orders_limit_per_premises = 1
+
+        premises = event.get('data')['premises']
+        order_set = await self._get_orders_for_premises(user=self.scope['user'], premises=premises)
+        print(order_set)
+        if len(order_set) >= orders_limit_per_premises:
+            return False
+        else:
+            return True
 
     async def create_order(self, event):
         order = await self._create_order(event.get('data'))
@@ -169,20 +190,16 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def _create_order(self, content):
-        # Pop products from order and validate seperatly
         order_products = content.pop('order_products')
-        print("## Order content passed to serailizer 1", content)
+
         order_serializer = OrderSerializer(data=content)
-        # Do not validate Order Products since it does not exists on model
-        print(order_products)
         order_products_serializer = OrderProductListingField(data=order_products, many=True)
+
         order_serializer.is_valid(raise_exception=True)
         order_products_serializer.is_valid(raise_exception=True)
+
         data = {'order_products': order_products, **order_serializer.validated_data}
-        print("## Order data used in create method 2", data)
         order = order_serializer.create(data)
-        # order = order_serializer.create(order_serializer.validated_data)
-        print('## Created order with id 3', order)
         return order
 
     @database_sync_to_async
@@ -204,6 +221,13 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             orders = user.orders_as_customer.exclude(
                 status=Order.COMPLETED
             ).only('id').values_list('id', flat=True)
+        return [str(orderid) for orderid in orders]
+
+    @database_sync_to_async
+    def _get_orders_for_premises(self, user, premises):
+        orders = user.orders_as_customer.filter(premises=premises).exclude(
+            status=Order.COMPLETED
+        ).only('id').values_list('id', flat=True)
         return [str(orderid) for orderid in orders]
 
     @database_sync_to_async
