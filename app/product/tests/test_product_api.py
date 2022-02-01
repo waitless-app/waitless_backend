@@ -11,6 +11,7 @@ from core.models import Menu, Premises, Product
 from product.serializers import ProductSerializer
 
 PRODUCT_URL = reverse('product:product-list')
+
 BASE64_IMAGE = 'data:image/png;base64,' \
                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg== '
 def sample_product(premises, menu, **params):
@@ -70,11 +71,10 @@ class PrivateMenuApiTest(TestCase):
         """Test retreiving product"""
         sample_product(menu=self.menu, premises=self.premises)
         sample_product(menu=self.menu, premises=self.premises)
-        res = self.client.get(PRODUCT_URL)
 
-        products = Product.objects.all().order_by('name')
+        products = Product.objects.none()
         serializer = ProductSerializer(products, many=True)
-
+        res = self.client.get(PRODUCT_URL)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
 
@@ -92,7 +92,6 @@ class PrivateMenuApiTest(TestCase):
         }
 
         res = self.client.post(PRODUCT_URL, payload)
-        print(res.json())
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(payload['name'], res.data['name'])
 

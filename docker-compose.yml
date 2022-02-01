@@ -33,4 +33,6 @@ services:
             - POSTGRES_DB=app
             - POSTGRES_USER=postgres
             - POSTGRES_PASSWORD=sspassword
+        ports:
+            - "5432:5432"
 

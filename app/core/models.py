@@ -1,3 +1,4 @@
+import random
 import uuid
 
 from django.db import models
@@ -44,7 +45,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
 
-    # traktuje groip to jako pole
     @property
     def group(self):
         groups = self.groups.all()
@@ -67,6 +67,7 @@ class Premises(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
+        related_name='user_premises'
     )
     name = models.CharField(max_length=255)
     image = models.FileField(upload_to='product')
@@ -78,6 +79,7 @@ class Premises(models.Model):
     postcode = models.CharField(max_length=255)
     address = models.CharField(max_length=255)
     location = PointField(null=False, blank=False, srid=4326, verbose_name='Location')
+    active = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -142,24 +144,34 @@ class Order(models.Model):
         null=True,
         related_name='orders_as_customer'
     )
-    vendor = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True,
-        related_name='orders_as_vendor'
-    )
     premises = models.ForeignKey(
         Premises,
         on_delete=models.CASCADE,
+        related_name='orders_as_premises'
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     ready_time = models.DateTimeField(null=True)
     collected_time = models.DateTimeField(null=True)
+    accept_time = models.DateTimeField(null=True)
     status = models.CharField(
         max_length=20, choices=STATUSES, default=REQUESTED)
     order_comment = models.TextField(max_length=500, null=True)
+    pickup_code = models.CharField(
+        max_length=10,
+        null=True,
+        editable=False,
+        unique=True,
+        default=None
+    )
+
+    @property
+    def total_cost(self):
+        total = 0
+        for order_product in self.order_products.all():
+            total += order_product.product.price * order_product.quantity
+        # Cannot serialize decimal out of the box
+        return str(total)
 
     def __str__(self):
         return f'{self.id}'
@@ -167,12 +179,21 @@ class Order(models.Model):
     def get_absolute_url(self):
         return reverse('order:order_detail', kwargs={'order_id': self.id})
 
+    def generate_order_pickup_code(self):
+        self.pickup_code = str(random.randint(100000, 999999))
+
+    def clear_order_pickup_code(self):
+        self.pickup_code = self._meta.get_field('pickup_code').get_default()
+
 
 class OrderProduct(models.Model):
     id = models.AutoField(primary_key=True)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="order_products")
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
+
+    def __str__(self):
+        return f'{self.id}'
 
     class Meta:
         unique_together = ('order', 'product')

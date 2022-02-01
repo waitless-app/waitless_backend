@@ -17,11 +17,13 @@ class PremisesViewSet(viewsets.ModelViewSet):
     queryset = Premises.objects.all()
     permission_classes = (IsAuthenticated,)
 
+    def is_vendor_app(self):
+        return self.request.META['HTTP_X_SOURCE_WEB']
+
     def get_queryset(self):
         """Retreive the premises for auth user"""
         try:
-            # TODO create wrapper for header
-            if(self.request.META['HTTP_X_SOURCE_WEB']):
+            if self.is_vendor_app():
                 return self.queryset.filter(owner=self.request.user)
         except KeyError:
             return self.queryset.all()
@@ -39,8 +41,7 @@ class PremisesViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         menu = None
         try:
-            # TODO create wrapper for header
-            if(self.request.META['HTTP_X_SOURCE_WEB']):
+            if self.is_vendor_app():
                 menu = Menu.objects.filter(premises=instance)
         except KeyError:
             menu = Menu.objects.filter(premises=instance, is_default=True)
