@@ -10,5 +10,5 @@ app_name = 'premises'
 
 urlpatterns = [
     path('', include(router.urls))
-    
+
 ]

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from core.models import Menu, Product, Premises
+from core.models import Menu, Product
 
 from premises.serializers import PremisesSerializer
 
@@ -16,12 +16,14 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('id',)
 
+
 class ProductListingSerializer(serializers.ModelSerializer):
     """ serializer to list product for orders"""
 
     class Meta:
         model = Product
-        fields = ['name','price','description', 'image', 'id']
+        fields = ['name', 'price', 'description', 'image', 'id']
+
 
 class MenuSerializer(serializers.ModelSerializer):
     """ serializer to menu object"""
@@ -31,9 +33,11 @@ class MenuSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('id',)
 
+
 class MenuProductsSerializer(serializers.ModelSerializer):
     products = ProductListingSerializer(many=True)
     premises = PremisesSerializer()
+
     class Meta:
         model = Menu
         fields = '__all__'

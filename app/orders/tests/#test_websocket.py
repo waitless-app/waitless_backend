@@ -66,6 +66,7 @@ def menu(premises):
     )
     return menu
 
+
 @database_sync_to_async
 @pytest.fixture()
 def vendor():
@@ -259,7 +260,7 @@ class TestWebSocket:
         response = await channel_layer.receive('test_channel')
         data = response.get('data')
 
-        assert data['id'] != None
+        assert data['id'] is not None
         assert customer.email == data['customer'].get('email')
 
         await communicator.disconnect()
@@ -297,7 +298,6 @@ class TestWebSocket:
     #     assert message == response
     #
     #     await communicator.disconnect()
-
 
     # async def test_customer_is_alerted_on_order_update(self, settings, premises, vendor):
     #     settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS

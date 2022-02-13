@@ -1,19 +1,19 @@
-import random
-
 from rest_framework.serializers import raise_errors_on_nested_writes
 from rest_framework.utils import model_meta
 
-from core.models import Order, Premises, OrderProduct, Product
+from core.models import Order, OrderProduct, Product
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from user.serializers import UserSerializer
-from product.serializers import ProductSerializer, ProductListingSerializer
+from product.serializers import ProductListingSerializer
 from premises.serializers import PremisesSerializer
 
 
 class OrderProductSerializer(serializers.ModelSerializer):
-    order = serializers.PrimaryKeyRelatedField(queryset=Order.objects.all(), required=False)
-    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+    order = serializers.PrimaryKeyRelatedField(
+        queryset=Order.objects.all(), required=False)
+    product = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all())
 
     class Meta:
         model = OrderProduct
@@ -23,7 +23,8 @@ class OrderProductSerializer(serializers.ModelSerializer):
 
 class OrderProductListingField(serializers.ModelSerializer):
     """ serializer for lisitng order products"""
-    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), required=True)
+    product = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(), required=True)
 
     class Meta:
         model = OrderProduct
@@ -31,7 +32,8 @@ class OrderProductListingField(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         self.fields['product'] = ProductListingSerializer()
-        return super(OrderProductListingField, self).to_representation(instance)
+        return super(OrderProductListingField,
+                     self).to_representation(instance)
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -46,22 +48,24 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created', 'updated')
 
     def create(self, validated_data):
-        # becuase order_products is marked as ReadOnly function is_valid does not pass in to validated_data
+        # becuase order_products is marked as ReadOnly function is_valid does
+        # not pass in to validated_data
         order_products = validated_data.pop('order_products')
         order = Order.objects.create(**validated_data)
         if order_products:
             for product in order_products:
                 product_id = product.get('product')
                 quantity = product.get('quantity')
-                OrderProduct.objects.create(order=order, product=Product.objects.get(id=product_id), quantity=quantity)
+                OrderProduct.objects.create(
+                    order=order, product=Product.objects.get(id=product_id), quantity=quantity)
         return order
 
     def is_valid(self, raise_exception=False):
         assert not hasattr(self, 'restore_object'), (
-                'Serializer `%s.%s` has old-style version 2 `.restore_object()` '
-                'that is no longer compatible with REST framework 3. '
-                'Use the new-style `.create()` and `.update()` methods instead.' %
-                (self.__class__.__module__, self.__class__.__name__)
+            'Serializer `%s.%s` has old-style version 2 `.restore_object()` '
+            'that is no longer compatible with REST framework 3. '
+            'Use the new-style `.create()` and `.update()` methods instead.' %
+            (self.__class__.__module__, self.__class__.__name__)
         )
 
         assert hasattr(self, 'initial_data'), (

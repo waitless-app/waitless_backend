@@ -32,7 +32,9 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
                     channel=self.channel_name
                 ))
                 premises_id = await self._get_vendor_premises(user)
-                print('## Vendor is added to premises channel', str(premises_id))
+                print(
+                    '## Vendor is added to premises channel',
+                    str(premises_id))
                 channel_groups.append(self.channel_layer.group_add(
                     group=str(premises_id),
                     channel=self.channel_name
@@ -78,7 +80,8 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(event)
 
     async def accept_order(self, event):
-        event['data'].update({"status": "ACCEPTED", "accept_time": timezone.now()})
+        event['data'].update(
+            {"status": "ACCEPTED", "accept_time": timezone.now()})
         await self.update_order(event)
 
     async def ready_order(self, event):
@@ -86,7 +89,8 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         await self.update_order(event)
 
     async def collect_order(self, event):
-        event['data'].update({"status": "COMPLETED", "collected_time": timezone.now()})
+        event['data'].update(
+            {"status": "COMPLETED", "collected_time": timezone.now()})
         await self.update_order(event)
 
     async def error_order(self, event):
@@ -193,12 +197,14 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         order_products = content.pop('order_products')
 
         order_serializer = OrderSerializer(data=content)
-        order_products_serializer = OrderProductListingField(data=order_products, many=True)
+        order_products_serializer = OrderProductListingField(
+            data=order_products, many=True)
 
         order_serializer.is_valid(raise_exception=True)
         order_products_serializer.is_valid(raise_exception=True)
 
-        data = {'order_products': order_products, **order_serializer.validated_data}
+        data = {'order_products': order_products,
+                **order_serializer.validated_data}
         order = order_serializer.create(data)
         return order
 

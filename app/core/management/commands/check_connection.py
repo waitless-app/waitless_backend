@@ -12,9 +12,11 @@ class Command(BaseCommand):
         db_conn = None
         while not db_conn:
             try:
-                conn = psycopg2.connect("host=localhost dbname=postgres", host=os.environ.get('DB_HOST'),
-                                           dbname=os.environ.get('DB_NAME'), user=os.environ.get('DB_USER'),
-                                           password=os.environ.get('DB_PASS'))
+                conn = psycopg2.connect("host=localhost dbname=postgres",
+                                        host=os.environ.get('DB_HOST'),
+                                        dbname=os.environ.get('DB_NAME'),
+                                        user=os.environ.get('DB_USER'),
+                                        password=os.environ.get('DB_PASS'))
                 conn.close()
                 db_conn = True
             except psycopg2.OperationalError as ex:

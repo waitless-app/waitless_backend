@@ -3,8 +3,6 @@ from core.models import Order
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from orders.serializers import OrderSerializer
-
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -40,7 +38,6 @@ class PrivateOrdersApiTests(TestCase):
         )
         self.client.force_authenticate(self.user)
 
-
     # def test_retrive_orders(self):
     #     """Test retreving a list of orders"""
     #     sample_order(user=self.user)
@@ -53,4 +50,3 @@ class PrivateOrdersApiTests(TestCase):
     #
     #     self.assertEqual(res.status_code, status.HTTP_200_OK)
     #     self.assertEqual(res.data, serializer.data)
-

@@ -76,4 +76,4 @@ class PrivateMenuApiTest(TestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(payload['name'], res.data['name'])
 
-    ##TD TEST UPDATE MENU
+    # TD TEST UPDATE MENU

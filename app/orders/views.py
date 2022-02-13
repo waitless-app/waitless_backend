@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from orders import serializers
@@ -44,4 +44,5 @@ def confirm_pickup_code(request):
 
         return Response(serializer.data)
     except (Order.DoesNotExist, KeyError):
-        return Response(status=status.HTTP_404_NOT_FOUND, data={'message': 'Code is invalid'})
+        return Response(status=status.HTTP_404_NOT_FOUND,
+                        data={'message': 'Code is invalid'})

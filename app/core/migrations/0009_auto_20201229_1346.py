@@ -20,24 +20,29 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='orderproduct',
             name='order',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='order_products', to='core.Order'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='order_products', to='core.Order'),
         ),
         migrations.AlterField(
             model_name='product',
             name='menu',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='products', to='core.Menu'),
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='products', to='core.Menu'),
         ),
         migrations.CreateModel(
             name='ProductCategory',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                 primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=255)),
-                ('premises', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='core.Premises')),
+                ('premises', models.ForeignKey(
+                    null=True, on_delete=django.db.models.deletion.SET_NULL, to='core.Premises')),
             ],
         ),
         migrations.AddField(
             model_name='product',
             name='group',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='core.ProductCategory'),
+            field=models.ForeignKey(
+                default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='core.ProductCategory'),
         ),
     ]

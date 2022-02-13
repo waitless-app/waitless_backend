@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
+from corsheaders.defaults import default_headers
+from glob import glob
 import os
 from datetime import timedelta
 
@@ -65,7 +67,8 @@ INSTALLED_APPS = [
     # 'debug_toolbar',
 ]
 
-CORS_ORIGIN_ALLOW_ALL = True  # If this is used then `CORS_ORIGIN_WHITELIST` will not have any effect
+# If this is used then `CORS_ORIGIN_WHITELIST` will not have any effect
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'app.urls'
@@ -188,12 +191,10 @@ LOGGING = {
     },
 }
 
-from glob import glob
 
 GDAL_LIBRARY_PATH = glob('/usr/lib/libgdal.so.*')[0]
 GEOS_LIBRARY_PATH = glob('/usr/lib/libgeos_c.so.*')[0]
 
-from corsheaders.defaults import default_headers
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-source-web'

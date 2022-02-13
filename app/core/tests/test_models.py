@@ -29,7 +29,8 @@ def sample_menu(
         is_default=True
 ):
     premises = sample_premises(owner=sample_user(email='owner@onboard.io'))
-    return models.Menu.objects.create(name=name, premises=premises, is_default=is_default)
+    return models.Menu.objects.create(
+        name=name, premises=premises, is_default=is_default)
 
 
 def sample_product(

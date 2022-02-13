@@ -14,17 +14,20 @@ PRODUCT_URL = reverse('product:product-list')
 
 BASE64_IMAGE = 'data:image/png;base64,' \
                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg== '
+
+
 def sample_product(premises, menu, **params):
     defaults = {
-            'name' : 'Cerveza',
-            'description' : 'Really cold American Pale Ale',
-            'price' : 9.99,
-            'ingredients' : 'Hop, Water, Yeast',
-            'estimated_creation_time' : 5.30,
+        'name': 'Cerveza',
+        'description': 'Really cold American Pale Ale',
+        'price': 9.99,
+        'ingredients': 'Hop, Water, Yeast',
+        'estimated_creation_time': 5.30,
     }
     defaults.update(params)
 
     return Product.objects.create(premises=premises, menu=menu, **defaults)
+
 
 class PublicMenuApiTest(TestCase):
     """Test the public available menu API"""
@@ -37,6 +40,7 @@ class PublicMenuApiTest(TestCase):
         res = self.client.get(PRODUCT_URL)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
 
 class PrivateMenuApiTest(TestCase):
     """Test authorized calls for menu API"""
@@ -81,12 +85,12 @@ class PrivateMenuApiTest(TestCase):
     def test_create_product(self):
         """ Test creating product"""
         payload = {
-            'name' : 'Cerveza',
-            'description' : 'Really cold American Pale Ale',
-            'price' : 9.99,
-            'ingredients' : 'Hop, Water, Yeast',
-            'estimated_creation_time' : 5.30,
-            'premises' : self.premises.id,
+            'name': 'Cerveza',
+            'description': 'Really cold American Pale Ale',
+            'price': 9.99,
+            'ingredients': 'Hop, Water, Yeast',
+            'estimated_creation_time': 5.30,
+            'premises': self.premises.id,
             'menu': self.menu.id,
             'image': BASE64_IMAGE,
         }
@@ -95,4 +99,4 @@ class PrivateMenuApiTest(TestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(payload['name'], res.data['name'])
 
-    ##TD TEST UPDATE MENU
+    # TD TEST UPDATE MENU

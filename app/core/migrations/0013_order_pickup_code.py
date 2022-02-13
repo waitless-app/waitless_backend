@@ -13,6 +13,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='order',
             name='pickup_code',
-            field=models.CharField(default=None, editable=False, max_length=10, null=True, unique=True),
+            field=models.CharField(
+                default=None, editable=False, max_length=10, null=True, unique=True),
         ),
     ]
