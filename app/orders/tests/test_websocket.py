@@ -130,7 +130,7 @@ async def connect_and_update_order(user, order, status, premises):
 
 
 @pytest.mark.asyncio
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db()
 class TestWebSocket:
 
     async def test_unauthorized_user_cannot_connect_to_socket(self, settings):
