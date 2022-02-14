@@ -29,3 +29,21 @@ jobs:
       run: docker-compose run app sh -c "python manage.py wait_for_db && python manage.py check_connection"
     - name: Run tests and flake8
       run: docker-compose run app sh -c "pytest && flake8"
+  
+  deploy:
+  
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Deploy using ssh
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.PASSWORD }}
+        port: 22
+        script: |
+          cd ~/projects/waitless-backend
+          git pull origin master
+          git status
+          pm2 restart run
