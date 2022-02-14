@@ -33,6 +33,8 @@ jobs:
   deploy:
   
     runs-on: ubuntu-latest
+    environment: waitless_backend
+    needs: build
     
     steps:
     - name: Deploy using ssh
