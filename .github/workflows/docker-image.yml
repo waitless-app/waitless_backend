@@ -42,7 +42,7 @@ jobs:
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.PASSWORD }}
+        key: ${{ secrets.PRIVATE_KEY }}
         port: 22
         script: |
           cd ~/projects/waitless-backend
