@@ -34,7 +34,7 @@ class UserAdmin(BaseUserAdmin):
 
 class OrderAdmin(admin.ModelAdmin):
     fields = (
-        'status','customer','premises','order_comment'
+        'status', 'customer', 'premises', 'order_comment'
     )
     list_display = (
         'id', 'status', 'created', 'updated'

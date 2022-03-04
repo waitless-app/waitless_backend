@@ -1,9 +1,10 @@
-from rest_framework import viewsets, mixins
+from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
 from core.models import Menu, Product
 
 from product import serializers
+
 
 class MenuViewset(viewsets.ModelViewSet):
     """Manage menu in the database"""
@@ -18,6 +19,7 @@ class MenuViewset(viewsets.ModelViewSet):
     #     # only one menu can be default
     #     serializer.save()
 
+
 class ProductViewset(viewsets.ModelViewSet):
     """Manage menu in the database"""
     permission_classes = (IsAuthenticated,)
@@ -29,7 +31,8 @@ class ProductViewset(viewsets.ModelViewSet):
         """Retreive the premises for auth user"""
         try:
             if premises:
-                return self.queryset.filter(premises__owner=self.request.user, premises=premises)
+                return self.queryset.filter(
+                    premises__owner=self.request.user, premises=premises)
             # TODO create wrapper for header
             if(self.request.META['HTTP_X_SOURCE_WEB']):
                 return self.queryset.filter(premises__owner=self.request.user)

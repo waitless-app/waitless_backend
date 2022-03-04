@@ -66,6 +66,7 @@ def menu(premises):
     )
     return menu
 
+
 @database_sync_to_async
 @pytest.fixture()
 def vendor():
@@ -130,7 +131,7 @@ async def connect_and_update_order(user, order, status, premises):
 
 
 @pytest.mark.asyncio
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db()
 class TestWebSocket:
 
     async def test_unauthorized_user_cannot_connect_to_socket(self, settings):
@@ -259,7 +260,7 @@ class TestWebSocket:
         response = await channel_layer.receive('test_channel')
         data = response.get('data')
 
-        assert data['id'] != None
+        assert data['id'] is not None
         assert customer.email == data['customer'].get('email')
 
         await communicator.disconnect()
@@ -297,7 +298,6 @@ class TestWebSocket:
     #     assert message == response
     #
     #     await communicator.disconnect()
-
 
     # async def test_customer_is_alerted_on_order_update(self, settings, premises, vendor):
     #     settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS

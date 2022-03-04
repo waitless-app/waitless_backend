@@ -14,33 +14,42 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Menu',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                 primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=255)),
                 ('is_default', models.BooleanField(default=False)),
-                ('premises', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.Premises')),
+                ('premises', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE, to='core.Premises')),
             ],
         ),
         migrations.CreateModel(
             name='Product',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                 primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=255)),
                 ('description', models.CharField(max_length=255)),
                 ('is_active', models.BooleanField(default=False)),
                 ('price', models.DecimalField(decimal_places=2, max_digits=10)),
                 ('ingredients', models.CharField(max_length=255)),
-                ('estimated_creation_time', models.DecimalField(decimal_places=2, max_digits=5)),
-                ('menu', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='core.Menu')),
-                ('premises', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.Premises')),
+                ('estimated_creation_time', models.DecimalField(
+                    decimal_places=2, max_digits=5)),
+                ('menu', models.ForeignKey(blank=True, null=True,
+                 on_delete=django.db.models.deletion.SET_NULL, to='core.Menu')),
+                ('premises', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE, to='core.Premises')),
             ],
         ),
         migrations.CreateModel(
             name='OrderProduct',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                 primary_key=True, serialize=False, verbose_name='ID')),
                 ('quantity', models.IntegerField(default=1)),
-                ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.Order')),
-                ('product', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.Product')),
+                ('order', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE, to='core.Order')),
+                ('product', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE, to='core.Product')),
             ],
             options={
                 'unique_together': {('order', 'product')},

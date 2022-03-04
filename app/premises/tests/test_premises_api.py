@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.contrib.gis.geos import Point
 from django.test import TestCase
 from django.urls import reverse
 
@@ -107,10 +106,6 @@ class PrivatePremisesApiTests(TestCase):
 
     def test_create_basic_premises(self):
         """Test creating premises"""
-        owner = get_user_model().objects.create_user(
-            email="owner@onboard.io",
-            password="passw0rd"
-        )
         payload = {
             'name': 'Sztoss',
             'image': BASE64_IMAGE,

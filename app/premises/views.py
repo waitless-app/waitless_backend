@@ -1,6 +1,5 @@
-from django.contrib.gis.geos import Point
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from core.models import Premises, Menu
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -47,5 +46,3 @@ class PremisesViewSet(viewsets.ModelViewSet):
             menu = Menu.objects.filter(premises=instance, is_default=True)
         serializer = MenuProductsSerializer(menu, many=True)
         return Response(serializer.data)
-
-
