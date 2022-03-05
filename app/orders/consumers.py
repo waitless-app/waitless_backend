@@ -44,7 +44,7 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
             if validated_order:
                 await self.create_order(content)
             else:
-                await self.error_order(content)
+                await self.error_order()
         if message_type == 'update.order':
             await self.update_order(content)
         if message_type == 'accept.order':
@@ -81,11 +81,11 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
         })
 
     async def validate_order_creation(self, event):
+        # TODO move to env
         orders_limit_per_premises = 1
 
         premises = event.get('data')['premises']
         order_set = await self._get_orders_for_premises(user=self.scope['user'], premises=premises)
-        print(order_set)
         if len(order_set) >= orders_limit_per_premises:
             return False
         else:
