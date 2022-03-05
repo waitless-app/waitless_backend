@@ -46,3 +46,14 @@ class PremisesViewSet(viewsets.ModelViewSet):
             menu = Menu.objects.filter(premises=instance, is_default=True)
         serializer = MenuProductsSerializer(menu, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def statistic(self, request, **kwargs):
+        instance = self.get_object()
+
+        res = {'active_orders': instance.get_active_orders(),
+               'completed_orders': instance.get_completed_orders(),
+               'month_balance': instance.get_month_income(),
+               'today_balance': instance.get_today_income()}
+
+        return Response(res)
