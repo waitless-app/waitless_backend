@@ -41,7 +41,7 @@ class PremisesViewSet(viewsets.ModelViewSet):
         menu = None
         try:
             if self.is_vendor_app():
-                menu = Menu.objects.filter(premises=instance)
+                menu = Menu.objects.filter(premises=instance).order_by('name')
         except KeyError:
             menu = Menu.objects.filter(premises=instance, is_default=True)
         serializer = MenuProductsSerializer(menu, many=True)
