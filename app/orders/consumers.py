@@ -7,44 +7,30 @@ from django.utils import timezone
 import asyncio
 
 
-class NotificationConsumer(AsyncJsonWebsocketConsumer):
+class OrderConsumer(AsyncJsonWebsocketConsumer):
     def __init__(self, scope):
         super().__init__(scope)
-
-        # Keep track of the user's orders.
         self.orders = set()
 
     async def connect(self):
         user = self.scope['user']
         if user.is_anonymous:
             await self.close()
-            print('## Anonymous user connected')
         else:
             channel_groups = []
-            # Get user groups
             user_group = await self._get_user_group(self.scope['user'])
 
-            # If user is vendor add him according premises channel
-            print("## User connected as", user_group)
             if str(user_group) == 'vendor':
-                channel_groups.append(self.channel_layer.group_add(
-                    group='vendor',
-                    channel=self.channel_name
-                ))
                 premises_id = await self._get_vendor_premises(user)
-                print(
-                    '## Vendor is added to premises channel',
-                    str(premises_id))
                 channel_groups.append(self.channel_layer.group_add(
                     group=str(premises_id),
                     channel=self.channel_name
                 ))
 
-            orderset = await self._get_orders(self.scope['user'])
-            self.orders = set(orderset)
+            order_set = await self._get_orders(self.scope['user'])
+            self.orders = set(order_set)
 
             for order in self.orders:
-                print("Customer added to channel - ", order)
                 channel_groups.append(
                     self.channel_layer.group_add(order, self.channel_name))
             asyncio.gather(*channel_groups)
@@ -52,15 +38,13 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
     async def receive_json(self, content, **kwargs):
         message_type = content.get('type')
-        print(message_type)
 
         if message_type == 'create.order':
             validated_order = await self.validate_order_creation(content)
-
             if validated_order:
                 await self.create_order(content)
             else:
-                await self.error_order(content)
+                await self.error_order()
         if message_type == 'update.order':
             await self.update_order(content)
         if message_type == 'accept.order':
@@ -76,12 +60,10 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             })
 
     async def order_notification(self, event):
-        print("ECHO MESSAGE", event.get('data').get('id'))
         await self.send_json(event)
 
     async def accept_order(self, event):
-        event['data'].update(
-            {"status": "ACCEPTED", "accept_time": timezone.now()})
+        event['data'].update({"status": "ACCEPTED", "accept_time": timezone.now()})
         await self.update_order(event)
 
     async def ready_order(self, event):
@@ -89,22 +71,21 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         await self.update_order(event)
 
     async def collect_order(self, event):
-        event['data'].update(
-            {"status": "COMPLETED", "collected_time": timezone.now()})
+        event['data'].update({"status": "COMPLETED", "collected_time": timezone.now()})
         await self.update_order(event)
 
-    async def error_order(self, event):
+    async def error_order(self):
         await self.send_json({
             'type': 'order.error',
             'data': 'You can only have 1 active order per premises'
         })
 
     async def validate_order_creation(self, event):
+        # TODO move to env
         orders_limit_per_premises = 1
 
         premises = event.get('data')['premises']
         order_set = await self._get_orders_for_premises(user=self.scope['user'], premises=premises)
-        print(order_set)
         if len(order_set) >= orders_limit_per_premises:
             return False
         else:
@@ -115,7 +96,6 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         order_id = f'{order.id}'
         order_data = await self._deserialize_order(order)
 
-        # send user requests to premises group.
         premises_channel = order_data.get('premises').get('id')
 
         await self.channel_layer.group_send(group=str(premises_channel), message={
@@ -124,10 +104,8 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         })
 
         # Handle only if order is not being tracked.
-        print("## Order is sent to channel", str(premises_channel))
         if order_id not in self.orders:
             self.orders.add(order_id)
-            # add this channel to new order group.
             await self.channel_layer.group_add(
                 group=order_id,
                 channel=self.channel_name
@@ -144,21 +122,11 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
         order_data = await self._deserialize_order(order)
 
-        # send updates to customers that subscribe to this order.
-        print("Order updates sending response to group", order_id)
-
-        # await self.channel_layer.group_send(group=order_id, message={
-        #     'type': 'echo.message',
-        #     'data': order_data
-        # })
-
         await self.channel_layer.group_send(group=order_id, message={
             'type': 'order.notification',
             'data': order_data
         })
 
-        # handle add only if order is not being tracked.
-        # this happens when a vendors accept a request.
         if order_id not in self.orders:
             self.orders.add(order_id)
             await self.channel_layer.group_add(
@@ -166,7 +134,6 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
                 channel=self.channel_name
             )
 
-        # This goes to vendor
         await self.send_json({
             'type': 'update_order',
             'data': order_data
@@ -197,14 +164,12 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         order_products = content.pop('order_products')
 
         order_serializer = OrderSerializer(data=content)
-        order_products_serializer = OrderProductListingField(
-            data=order_products, many=True)
+        order_products_serializer = OrderProductListingField(data=order_products, many=True)
 
         order_serializer.is_valid(raise_exception=True)
         order_products_serializer.is_valid(raise_exception=True)
 
-        data = {'order_products': order_products,
-                **order_serializer.validated_data}
+        data = {'order_products': order_products, **order_serializer.validated_data}
         order = order_serializer.create(data)
         return order
 
@@ -219,7 +184,6 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             raise Exception('User is not authenticated.')
         user_groups = user.groups.values_list('name', flat=True)
         if 'vendor' in user_groups:
-            # TODO - TAKE PREMISES FROM PARAMETER NOT FIRST
             orders = user.user_premises.first().orders_as_premises.exclude(
                 status=Order.COMPLETED
             ).only('id').values_list('id', flat=True)

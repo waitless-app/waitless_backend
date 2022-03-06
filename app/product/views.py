@@ -1,5 +1,7 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from core.models import Menu, Product
 
@@ -12,12 +14,15 @@ class MenuViewset(viewsets.ModelViewSet):
     queryset = Menu.objects.all()
     serializer_class = serializers.MenuSerializer
 
-    # def perform_create(self, serializer):
-    #     # TODO validation creating menu
-    #     # in order to create menu (request.user) should
-    #     # be the same as premises owner
-    #     # only one menu can be default
-    #     serializer.save()
+    @action(detail=True, methods=['post'])
+    def make_default(self, request, **kwargs):
+        instance = self.get_object()
+
+        Menu.objects.filter(premises=instance.premises).update(is_default=False)
+        instance.is_default = True
+        instance.save()
+
+        return Response(status=status.HTTP_200_OK)
 
 
 class ProductViewset(viewsets.ModelViewSet):
@@ -38,9 +43,3 @@ class ProductViewset(viewsets.ModelViewSet):
                 return self.queryset.filter(premises__owner=self.request.user)
         except KeyError:
             return self.queryset.none()
-
-    # def perform_create(self, serializer):
-    #     # in order to create menu (request.user) should
-    #     # be the same as premises owner
-    #     serializer.save()
-    #

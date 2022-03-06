@@ -69,11 +69,10 @@ class PrivateMenuApiTest(TestCase):
         """ Test creating menu"""
         payload = {
             'premises': self.premises.id,
-            'name': 'Main menu'
+            'name': 'Main menu',
+            'description': 'Main Menu Description',
         }
 
         res = self.client.post(MENU_URL, payload)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(payload['name'], res.data['name'])
-
-    # TD TEST UPDATE MENU

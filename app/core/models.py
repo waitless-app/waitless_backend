@@ -10,6 +10,7 @@ from django.contrib.auth.models import (
 )
 from django.conf import settings
 from django.shortcuts import reverse
+from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
@@ -85,10 +86,44 @@ class Premises(models.Model):
     def __str__(self):
         return self.name
 
+    def get_completed_orders(self):
+        return self.orders_as_premises.filter(status="COMPLETED").count()
+
+    def get_active_orders(self):
+        return self.orders_as_premises.exclude(status="COMPLETED").count()
+
+    def get_month_income(self):
+        import calendar
+
+        now = timezone.now()
+
+        start_date = now.replace(
+            day=calendar.monthrange(now.year, now.month)[0])
+        end_date = now.replace(
+            day=calendar.monthrange(now.year, now.month)[1])
+
+        order_total_list = [order.total_cost for order in
+                            self.orders_as_premises.filter(
+                                created__gte=start_date,
+                                created__lte=end_date)]
+        return sum(map(float, order_total_list))
+
+    def get_today_income(self):
+        today_start = timezone.now().replace(hour=0, minute=0, second=0)
+        today_end = timezone.now().replace(hour=23, minute=59, second=59)
+
+        order_total_list = [order.total_cost for order in
+                            self.orders_as_premises.filter(
+                                created__gte=today_start,
+                                created__lte=today_end)]
+
+        return sum(map(float, order_total_list))
+
 
 class Menu(models.Model):
     name = models.CharField(max_length=255)
     premises = models.ForeignKey(Premises, on_delete=models.CASCADE)
+    description = models.CharField(max_length=255)
     is_default = models.BooleanField(default=False)
 
     def __str__(self):
