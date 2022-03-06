@@ -163,7 +163,7 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
     def _create_order(self, content):
         order_products = content.pop('order_products')
 
-        internal_user = {'customer': self.scope['user']}
+        internal_user = {'customer': self.scope['user'].id}
         content.update(internal_user)
 
         order_serializer = OrderSerializer(data=content)
