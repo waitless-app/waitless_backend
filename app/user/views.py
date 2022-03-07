@@ -10,6 +10,7 @@ class CreateUserView(generics.CreateAPIView):
     def perform_create(self, serializer):
         instance = serializer.save()
         user_group, _ = Group.objects.get_or_create(name='customer')
+        instance.groups.clear()
         instance.groups.add(user_group)
 
 
@@ -21,6 +22,7 @@ class CreateVendorView(generics.CreateAPIView):
     def perform_create(self, serializer):
         instance = serializer.save()
         user_group, _ = Group.objects.get_or_create(name='vendor')
+        instance.groups.clear()
         instance.groups.add(user_group)
 
 
