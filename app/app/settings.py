@@ -200,6 +200,9 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-source-web'
 ]
 
+MAX_PREMISES_NUM = 1
+MAX_ACTIVE_ORDERS = 1
+
 try:
     from local_settings import *
 except ImportError:

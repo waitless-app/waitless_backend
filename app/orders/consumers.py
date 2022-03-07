@@ -1,4 +1,6 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+
+from app.settings import MAX_ACTIVE_ORDERS
 from orders.serializers import ReadOnlyOrderSerializer, OrderSerializer, UpdateOrderSerializer, \
     OrderProductListingField
 from channels.db import database_sync_to_async
@@ -44,7 +46,7 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
             if validated_order:
                 await self.create_order(content)
             else:
-                await self.error_order()
+                await self.error_order(f'You can only have {MAX_ACTIVE_ORDERS} active order per premises')
         if message_type == 'update.order':
             await self.update_order(content)
         if message_type == 'accept.order':
@@ -74,19 +76,16 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
         event['data'].update({"status": "COMPLETED", "collected_time": timezone.now()})
         await self.update_order(event)
 
-    async def error_order(self):
+    async def error_order(self, message):
         await self.send_json({
             'type': 'order.error',
-            'data': 'You can only have 1 active order per premises'
+            'data': message
         })
 
     async def validate_order_creation(self, event):
-        # TODO move to env
-        orders_limit_per_premises = 1
-
         premises = event.get('data')['premises']
         order_set = await self._get_orders_for_premises(user=self.scope['user'], premises=premises)
-        if len(order_set) >= orders_limit_per_premises:
+        if len(order_set) >= MAX_ACTIVE_ORDERS:
             return False
         else:
             return True
