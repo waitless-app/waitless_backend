@@ -1,7 +1,8 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from app.settings import MAX_ACTIVE_ORDERS
-from orders.serializers import ReadOnlyOrderSerializer, OrderSerializer, UpdateOrderSerializer, \
+from orders.serializers import ReadOnlyOrderSerializer, OrderSerializer, \
+    UpdateOrderSerializer, \
     OrderProductListingField
 from channels.db import database_sync_to_async
 from core.models import Order
@@ -46,7 +47,8 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
             if validated_order:
                 await self.create_order(content)
             else:
-                await self.error_order(f'You can only have {MAX_ACTIVE_ORDERS} active order per premises')
+                await self.error_order(
+                    f'You can only have {MAX_ACTIVE_ORDERS} active order per premises')
         if message_type == 'update.order':
             await self.update_order(content)
         if message_type == 'accept.order':
@@ -55,17 +57,13 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
             await self.ready_order(content)
         if message_type == 'complete.order':
             await self.collect_order(content)
-        if message_type == 'test':
-            await self.send_json({
-                'type': 'testresponse',
-                'data': content
-            })
 
     async def order_notification(self, event):
         await self.send_json(event)
 
     async def accept_order(self, event):
-        event['data'].update({"status": "ACCEPTED", "accept_time": timezone.now()})
+        event['data'].update(
+            {"status": "ACCEPTED", "accept_time": timezone.now()})
         await self.update_order(event)
 
     async def ready_order(self, event):
@@ -73,7 +71,8 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
         await self.update_order(event)
 
     async def collect_order(self, event):
-        event['data'].update({"status": "COMPLETED", "collected_time": timezone.now()})
+        event['data'].update(
+            {"status": "COMPLETED", "collected_time": timezone.now()})
         await self.update_order(event)
 
     async def error_order(self, message):
@@ -82,14 +81,6 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
             'data': message
         })
 
-    async def validate_order_creation(self, event):
-        premises = event.get('data')['premises']
-        order_set = await self._get_orders_for_premises(user=self.scope['user'], premises=premises)
-        if len(order_set) >= MAX_ACTIVE_ORDERS:
-            return False
-        else:
-            return True
-
     async def create_order(self, event):
         order = await self._create_order(event.get('data'))
         order_id = f'{order.id}'
@@ -97,10 +88,11 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
 
         premises_channel = order_data.get('premises').get('id')
 
-        await self.channel_layer.group_send(group=str(premises_channel), message={
-            'type': 'order.notification',
-            'data': order_data
-        })
+        await self.channel_layer.group_send(group=str(premises_channel),
+                                            message={
+                                                'type': 'order.notification',
+                                                'data': order_data
+                                            })
 
         # Handle only if order is not being tracked.
         if order_id not in self.orders:
@@ -138,6 +130,15 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
             'data': order_data
         })
 
+    async def validate_order_creation(self, event):
+        premises = event.get('data')['premises']
+        order_set = await self._get_orders_for_premises(
+            user=self.scope['user'], premises=premises)
+        if len(order_set) >= MAX_ACTIVE_ORDERS:
+            return False
+        else:
+            return True
+
     async def disconnect(self, code):
         # Remove this channel from every order group.
         channel_groups = [
@@ -166,13 +167,23 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
         content.update(internal_user)
 
         order_serializer = OrderSerializer(data=content)
-        order_products_serializer = OrderProductListingField(data=order_products, many=True)
+        order_products_serializer = OrderProductListingField(
+            data=order_products, many=True)
 
         order_serializer.is_valid(raise_exception=True)
         order_products_serializer.is_valid(raise_exception=True)
 
-        data = {'order_products': order_products, **order_serializer.validated_data}
+        data = {'order_products': order_products,
+                **order_serializer.validated_data}
         order = order_serializer.create(data)
+        return order
+
+    @database_sync_to_async
+    def _update_order(self, content):
+        instance = Order.objects.get(id=content.get('order'))
+        serializer = UpdateOrderSerializer(data=content, partial=True)
+        serializer.is_valid(raise_exception=True)
+        order = serializer.update(instance, serializer.validated_data)
         return order
 
     @database_sync_to_async
@@ -201,14 +212,6 @@ class OrderConsumer(AsyncJsonWebsocketConsumer):
             status=Order.COMPLETED
         ).only('id').values_list('id', flat=True)
         return [str(orderid) for orderid in orders]
-
-    @database_sync_to_async
-    def _update_order(self, content):
-        instance = Order.objects.get(id=content.get('order'))
-        serializer = UpdateOrderSerializer(data=content, partial=True)
-        serializer.is_valid(raise_exception=True)
-        order = serializer.update(instance, serializer.validated_data)
-        return order
 
     @database_sync_to_async
     def _get_user_group(self, user):

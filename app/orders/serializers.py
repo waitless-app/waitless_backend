@@ -3,7 +3,6 @@ from rest_framework.utils import model_meta
 
 from core.models import Order, OrderProduct, Product
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from user.serializers import UserSerializer
 from product.serializers import ProductListingSerializer
 from premises.serializers import PremisesSerializer
@@ -39,8 +38,6 @@ class OrderProductListingField(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     """ serializer for creating and updating orders"""
 
-    # order_products = serializers.RelatedField(queryset=OrderProduct.objects.all(), many=True)
-
     class Meta:
         model = Order
         fields = '__all__'
@@ -48,8 +45,6 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created', 'updated')
 
     def create(self, validated_data):
-        # becuase order_products is marked as ReadOnly function is_valid does
-        # not pass in to validated_data
         order_products = validated_data.pop('order_products')
         order = Order.objects.create(**validated_data)
         if order_products:
@@ -57,39 +52,9 @@ class OrderSerializer(serializers.ModelSerializer):
                 product_id = product.get('product')
                 quantity = product.get('quantity')
                 OrderProduct.objects.create(
-                    order=order, product=Product.objects.get(id=product_id), quantity=quantity)
+                    order=order, product=Product.objects.get(id=product_id),
+                    quantity=quantity)
         return order
-
-    def is_valid(self, raise_exception=False):
-        assert not hasattr(self, 'restore_object'), (
-            'Serializer `%s.%s` has old-style version 2 `.restore_object()` '
-            'that is no longer compatible with REST framework 3. '
-            'Use the new-style `.create()` and `.update()` methods instead.' %
-            (self.__class__.__module__, self.__class__.__name__)
-        )
-
-        assert hasattr(self, 'initial_data'), (
-            'Cannot call `.is_valid()` as no `data=` keyword argument was '
-            'passed when instantiating the serializer instance.'
-        )
-
-        if not hasattr(self, '_validated_data'):
-            try:
-                self._validated_data = self.run_validation(self.initial_data)
-            except ValidationError as exc:
-                print('## VALIDATED DATA', self._validated_data)
-                print('## INITIAL DATA', self.initial_data)
-                print('## VALIDATION ERROR', exc)
-                self._validated_data = {}
-                self._errors = exc.detail
-            else:
-                self._errors = {}
-
-        if self._errors and raise_exception:
-            raise ValidationError(self.errors)
-            # print('is_valid', self.initial_data)
-
-        return not bool(self._errors)
 
 
 class UpdateOrderSerializer(serializers.ModelSerializer):
@@ -111,7 +76,7 @@ class UpdateOrderSerializer(serializers.ModelSerializer):
                 m2m_fields.append((attr, value))
             else:
                 setattr(instance, attr, value)
-        # TODO write tests for it
+
         if instance.status == "READY":
             instance.generate_order_pickup_code()
 
@@ -131,8 +96,6 @@ class UpdateOrderSerializer(serializers.ModelSerializer):
 
 
 class ReadOnlyOrderSerializer(serializers.ModelSerializer):
-    # premises = serializers.PrimaryKeyRelatedField(queryset=Premises.objects.all())
-    # above works but PremisesSerializer() does not
     premises = PremisesSerializer(read_only=True)
     customer = UserSerializer(read_only=True)
     order_products = OrderProductListingField(many=True)
@@ -140,5 +103,7 @@ class ReadOnlyOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = (
-            'id', 'premises', 'customer', 'created', 'updated', 'ready_time', 'collected_time', 'status',
-            'order_comment', 'pickup_code', 'total_cost', 'order_products', 'accept_time')
+            'id', 'premises', 'customer', 'created', 'updated', 'ready_time',
+            'collected_time', 'status',
+            'order_comment', 'pickup_code', 'total_cost', 'order_products',
+            'accept_time')
