@@ -18,16 +18,11 @@ class PremisesViewSet(viewsets.ModelViewSet):
     queryset = Premises.objects.all()
     permission_classes = (IsAuthenticated,)
 
-    def is_vendor_app(self):
-        return self.request.META['HTTP_X_SOURCE_WEB']
-
     def get_queryset(self):
         """Retreive the premises for auth user"""
-        try:
-            if self.is_vendor_app():
-                return self.queryset.filter(owner=self.request.user)
-        except KeyError:
-            return self.queryset.all()
+        if self.request.is_vendor:
+            return self.queryset.filter(owner=self.request.user)
+        return self.queryset.all()
 
     def get_serializer_class(self):
         """Return appropriate serializer class"""
@@ -38,12 +33,14 @@ class PremisesViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         if self.request.user.user_premises.count() >= MAX_PREMISES_NUM:
-            return Response(data={'message': f'Premises number limited to {MAX_PREMISES_NUM}'},
+            return Response(data={
+                'message': f'Premises number limited to {MAX_PREMISES_NUM}'},
                             status=status.HTTP_403_FORBIDDEN)
 
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(serializer.data, status=status.HTTP_201_CREATED,
+                        headers=headers)
 
     def perform_create(self, serializer):
         """Create a new premises"""
@@ -53,11 +50,11 @@ class PremisesViewSet(viewsets.ModelViewSet):
     def menu(self, request, **kwargs):
         instance = self.get_object()
         menu = None
-        try:
-            if self.is_vendor_app():
-                menu = Menu.objects.filter(premises=instance).order_by('name')
-        except KeyError:
+        if self.request.is_vendor:
+            menu = Menu.objects.filter(premises=instance).order_by('name')
+        else:
             menu = Menu.objects.filter(premises=instance, is_default=True)
+
         serializer = MenuProductsSerializer(menu, many=True)
         return Response(serializer.data)
 

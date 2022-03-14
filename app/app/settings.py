@@ -25,14 +25,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '9c%$$ryrjp%&rctp0boes-ns+oe3d#xf1%gx@h@f-zoss6^$pn'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
-    'localhost',
-    '0.0.0.0',
-    '192.168.2.11',
-    '127.0.0.1',
-    '*'
+    'https://waitless-app.netlify.app',
+    'https://waitless-pwa.netlify.app/'
 ]
 
 # Application definition
@@ -45,7 +42,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'app.middleware.responsemiddleware.ResponseMiddleware',
 ]
 
 INSTALLED_APPS = [
@@ -64,7 +61,6 @@ INSTALLED_APPS = [
     'user',
     'premises',
     'orders',
-    # 'debug_toolbar',
 ]
 
 # If this is used then `CORS_ORIGIN_WHITELIST` will not have any effect
@@ -134,9 +130,8 @@ USE_L10N = True
 USE_TZ = True
 
 SIMPLE_JWT = {
-    # only for dev purpose
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
 # Static files (CSS, JavaScript, Images)
@@ -150,9 +145,7 @@ REST_FRAMEWORK = {
     )
 }
 INTERNAL_IPS = [
-    # ...
     '*',
-    # ...
 ]
 AUTH_USER_MODEL = 'core.User'
 
@@ -204,6 +197,6 @@ MAX_PREMISES_NUM = 1
 MAX_ACTIVE_ORDERS = 1
 
 try:
-    from local_settings import *
+    from .local_settings import *
 except ImportError:
     pass
