@@ -7,7 +7,7 @@ from rest_framework.test import APIClient
 
 from core.models import Premises
 
-from premises.serializers import PremisesSerializer, PremisesDetailSerializer
+from premises.serializers import PremisesSerializer
 
 PREMISES_URL = reverse('premises:premises-list')
 BASE64_IMAGE = 'data:image/png;base64,' \
@@ -101,7 +101,7 @@ class PrivatePremisesApiTests(TestCase):
         url = detail_url(premises.id)
         res = self.client.get(url)
 
-        serializer = PremisesDetailSerializer(premises)
+        serializer = PremisesSerializer(premises)
         self.assertEqual(res.data, serializer.data)
 
     def test_create_basic_premises(self):
