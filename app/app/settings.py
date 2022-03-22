@@ -28,8 +28,7 @@ SECRET_KEY = '9c%$$ryrjp%&rctp0boes-ns+oe3d#xf1%gx@h@f-zoss6^$pn'
 DEBUG = False
 
 ALLOWED_HOSTS = [
-    'https://waitless-app.netlify.app',
-    'https://waitless-pwa.netlify.app/'
+    '.netflix.app',
 ]
 
 # Application definition
