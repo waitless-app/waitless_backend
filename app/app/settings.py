@@ -28,7 +28,7 @@ SECRET_KEY = '9c%$$ryrjp%&rctp0boes-ns+oe3d#xf1%gx@h@f-zoss6^$pn'
 DEBUG = False
 
 ALLOWED_HOSTS = [
-    '.netflix.app',
+    '*',
 ]
 
 # Application definition
